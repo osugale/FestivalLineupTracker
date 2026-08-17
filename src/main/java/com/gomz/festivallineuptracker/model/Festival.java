@@ -19,16 +19,34 @@ public class Festival {
     @JoinTable(name="festival_artist", joinColumns=@JoinColumn(name="festival_id"), inverseJoinColumns=@JoinColumn(name = "artist_id"))
     private List<Artist> artists = new ArrayList<>();
 
+    @Column(nullable = false, length = 150)
     private String name;
+
+    @Column(nullable = false, length = 100)
     private String city;
+
+    @Column(nullable = false, length = 100)
     private String country;
+
+    @Column(nullable = false, length = 150)
     private String venue;
+
+    @Column(nullable = false)
     private LocalDate startDate;
+
+    @Column(nullable = false)
     private LocalDate endDate;
+
     @Column(length = 1000)
     private String description;
+
+    @Column(length = 500)
     private String imageUrl;
+
+    @Column(length = 500)
     private String officialWebsite;
+
+    @Column(length = 100)
     private String genre;
 
 

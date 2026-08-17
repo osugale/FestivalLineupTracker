@@ -22,15 +22,30 @@ public class Artist {
 
 
 
-
+    @Column(nullable = false, length = 150)
     private String name;
+
+    @Column(nullable = false, length = 100)
     private String genre;
+
+    @Column(nullable = false, length = 100)
     private String country;
+
+    @Column(length = 500)
     private String imageUrl;
+
+    @Column(length = 500)
     private String spotifyUrl;
+
+    @Column(length = 500)
     private String instagramUrl;
+
+    @Column(length = 500)
     private String soundcloudUrl;
+
+    @Column(length = 500)
     private String youtubeUrl;
+
     @Column(length = 1000)
     private String bio;
 

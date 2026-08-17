@@ -15,6 +15,7 @@ public class ArtistRequestDTO {
     private String genre;
     @NotBlank(message = "Artist Country cannot be blank")
     private String country;
+
     private String imageUrl;
     private String spotifyUrl;
     private String instagramUrl;
