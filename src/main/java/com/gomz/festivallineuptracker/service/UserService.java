@@ -9,17 +9,23 @@ import com.gomz.festivallineuptracker.exception.InvalidCredentialsException;
 import com.gomz.festivallineuptracker.model.Role;
 import com.gomz.festivallineuptracker.model.User;
 import com.gomz.festivallineuptracker.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+
+
+
+    public UserService(UserRepository userRepository, JwtService jwtService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -67,7 +73,7 @@ public class UserService {
 
         LoginResponseDTO response = new LoginResponseDTO();
 
-        response.setToken(null);
+        response.setToken(jwtService.generateToken(user));
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setRole(user.getRole());
