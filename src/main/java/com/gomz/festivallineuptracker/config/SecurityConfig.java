@@ -81,18 +81,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-//    @Bean
-//    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(
-//            JwtAuthenticationFilter jwtAuthenticationFilter) {
-//        FilterRegistrationBean<JwtAuthenticationFilter> registration =
-//                new FilterRegistrationBean<>(jwtAuthenticationFilter);
-//        registration.setEnabled(false);
-//        return registration;
-//    }
-
-
-
-
 
 
 
