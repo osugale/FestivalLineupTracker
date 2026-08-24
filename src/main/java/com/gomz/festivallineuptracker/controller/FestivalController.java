@@ -8,6 +8,7 @@ import com.gomz.festivallineuptracker.service.FestivalService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
@@ -31,14 +32,16 @@ public class FestivalController {
 
 
 
-
-
-
     @GetMapping @Operation(summary = "Get all festivals")
     public ResponseEntity<Page<FestivalResponseDTO>> getFestivals(@RequestParam (defaultValue = "0") int page, @RequestParam (defaultValue = "10") int size) {
 
         return ResponseEntity.ok(festivalService.getFestivals(page, size));
     }
+
+
+
+
+
 
     @GetMapping("/{id}") @Operation(summary = "Get festival by ID")
     public ResponseEntity<FestivalResponseDTO> getFestivalById(@PathVariable int id) {
@@ -52,6 +55,11 @@ public class FestivalController {
         return ResponseEntity.notFound().build();
     }
 
+
+
+
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping @Operation(summary = "Create a new festival")
     public ResponseEntity<FestivalResponseDTO> createFestival(
             @Valid @RequestBody FestivalRequestDTO dto) {
@@ -61,6 +69,11 @@ public class FestivalController {
         return ResponseEntity.status(201).body(festival);
     }
 
+
+
+
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}") @Operation(summary = "Update a festival")
     public ResponseEntity<FestivalResponseDTO> updateFestival(
             @PathVariable int id,
@@ -77,6 +90,11 @@ public class FestivalController {
 
 
 
+
+
+
+
+
     @GetMapping("/{festivalId}/artists") @Operation(summary = "Get all artists of a festival")
     public ResponseEntity<List<ArtistResponseDTO>> getArtistsOfFestival(@PathVariable int festivalId) {
 
@@ -89,6 +107,12 @@ public class FestivalController {
 
 
 
+
+
+
+
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{festivalId}/artists/{artistId}") @Operation(summary = "Add an artist to a festival")
     public ResponseEntity<FestivalResponseDTO> createRelation(@PathVariable int festivalId, @PathVariable int artistId) {
 
@@ -104,6 +128,9 @@ public class FestivalController {
 
 
 
+
+
+
     @GetMapping("/search") @Operation(summary = "Search festivals by name")
     public ResponseEntity<List<FestivalResponseDTO>> searchFestivals(@RequestParam String name) {
 
@@ -112,6 +139,11 @@ public class FestivalController {
     }
 
 
+
+
+
+
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{festivalId}/artists/{artistId}") @Operation(summary = "Remove an artist from a festival")
     public ResponseEntity<Void> deleteRelation(@PathVariable int festivalId, @PathVariable int artistId) {
 
@@ -128,6 +160,7 @@ public class FestivalController {
 
 
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}") @Operation(summary = "Delete a festival")
     public ResponseEntity<Void> deleteFestival(@PathVariable int id){
 

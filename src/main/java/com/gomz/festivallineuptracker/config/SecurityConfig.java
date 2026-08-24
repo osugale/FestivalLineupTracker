@@ -17,6 +17,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 @Configuration
 @EnableWebSecurity
@@ -38,15 +39,29 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http    .csrf(AbstractHttpConfigurer::disable)
+        http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/artists/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/festivals/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/artists/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/artists/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/artists/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/festivals/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/festivals/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/festivals/**").hasRole("ADMIN")
+
+
                         .anyRequest().authenticated()
+
                 )
+
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler())
@@ -65,6 +80,15 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+//    @Bean
+//    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(
+//            JwtAuthenticationFilter jwtAuthenticationFilter) {
+//        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+//                new FilterRegistrationBean<>(jwtAuthenticationFilter);
+//        registration.setEnabled(false);
+//        return registration;
+//    }
 
 
 

@@ -7,6 +7,7 @@ import com.gomz.festivallineuptracker.service.ArtistService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 
@@ -62,6 +63,7 @@ public class ArtistController {
 
 
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping   @Operation(summary = "Create a new artist")
     public ResponseEntity<ArtistResponseDTO> createArtist(@Valid @RequestBody ArtistRequestDTO artistDTO) {
 
@@ -80,6 +82,7 @@ public class ArtistController {
 
 
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}") @Operation(summary = "Update an artist")
     public ResponseEntity<ArtistResponseDTO> updateArtist(@PathVariable int id,@Valid @RequestBody ArtistRequestDTO dto) {
 
@@ -98,6 +101,7 @@ public class ArtistController {
 
 
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")    @Operation(summary = "Delete an artist")
     public ResponseEntity<Void> deleteArtist(@PathVariable int id) {
 
