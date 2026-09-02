@@ -18,7 +18,9 @@ public class Artist {
     }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private int id;
-    @ManyToMany(mappedBy="artists") private List<Festival> festivals;
+
+    @ManyToMany(mappedBy="artists")
+    private List<Festival> festivals;
 
 
 
