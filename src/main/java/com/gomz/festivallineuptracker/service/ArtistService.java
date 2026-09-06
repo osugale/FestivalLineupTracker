@@ -25,6 +25,16 @@ public class ArtistService {
 
 
 
+    private ArtistResponseDTO toResponse(Artist artist) {
+        return new ArtistResponseDTO(
+                artist.getName(), artist.getGenre(), artist.getCountry(),
+                artist.getImageUrl(), artist.getSpotifyUrl(), artist.getInstagramUrl(), artist.getSoundcloudUrl(), artist.getYoutubeUrl(),
+                artist.getBio(), artist.getId()
+        );
+    }
+
+
+
 
 
 
@@ -34,9 +44,8 @@ public class ArtistService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
 
-        return artistRepository.findAll(pageable).map(artist -> new ArtistResponseDTO(artist.getName(), artist.getGenre(), artist.getCountry(),
-                artist.getImageUrl(), artist.getSpotifyUrl(), artist.getInstagramUrl(), artist.getSoundcloudUrl(), artist.getYoutubeUrl(),
-                artist.getBio(), artist.getId()));
+
+        return artistRepository.findAll(pageable).map(this::toResponse);
 
     }
 
@@ -55,11 +64,7 @@ public class ArtistService {
             throw new ResourceNotFoundException("Artist with id " + id + " not found");
         }
 
-        return new ArtistResponseDTO(
-                artist.getName(), artist.getGenre(), artist.getCountry(),
-                artist.getImageUrl(), artist.getSpotifyUrl(), artist.getInstagramUrl(), artist.getSoundcloudUrl(), artist.getYoutubeUrl(),
-                artist.getBio(), artist.getId()
-        );
+        return toResponse(artist);
 
     }
 
@@ -90,10 +95,7 @@ public class ArtistService {
 
         Artist savedArtist = artistRepository.save(artist);
 
-        return new ArtistResponseDTO(
-                savedArtist.getName(), savedArtist.getGenre(), savedArtist.getCountry(), savedArtist.getImageUrl(), savedArtist.getSpotifyUrl(),
-                savedArtist.getInstagramUrl(), savedArtist.getSoundcloudUrl(), savedArtist.getYoutubeUrl(), savedArtist.getBio(), savedArtist.getId()
-        );
+        return toResponse(savedArtist);
     }
 
 
@@ -125,10 +127,7 @@ public class ArtistService {
 
         Artist updatedArtist = artistRepository.save(artist);
 
-        return new ArtistResponseDTO(
-                updatedArtist.getName(), updatedArtist.getGenre(), updatedArtist.getCountry(), updatedArtist.getImageUrl(), updatedArtist.getSpotifyUrl(),
-                updatedArtist.getInstagramUrl(), updatedArtist.getSoundcloudUrl(), updatedArtist.getYoutubeUrl(), updatedArtist.getBio(), updatedArtist.getId()
-        );
+        return toResponse(updatedArtist);
     }
 
 
@@ -142,10 +141,7 @@ public class ArtistService {
 
     public List<ArtistResponseDTO> searchArtists(String name) {
 
-        return artistRepository.findByNameContaining(name).stream().map(artist -> new ArtistResponseDTO(
-                artist.getName(), artist.getGenre(), artist.getCountry(),
-                artist.getImageUrl(), artist.getSpotifyUrl(), artist.getInstagramUrl(), artist.getSoundcloudUrl(), artist.getYoutubeUrl(),
-                artist.getBio(), artist.getId())).toList();
+        return artistRepository.findByNameContaining(name).stream().map(this::toResponse).toList();
     }
 
 
@@ -188,4 +184,5 @@ public class ArtistService {
         artistRepository.deleteById(id);
         return true;
     }
+
 }

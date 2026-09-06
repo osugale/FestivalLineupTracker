@@ -1,0 +1,3 @@
+ALTER TABLE festival
+    MODIFY COLUMN start_date DATE NOT NULL,
+    MODIFY COLUMN end_date DATE NOT NULL;

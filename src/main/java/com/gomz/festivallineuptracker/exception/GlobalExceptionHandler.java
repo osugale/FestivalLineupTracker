@@ -57,5 +57,27 @@ public class GlobalExceptionHandler {
         return error;
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleInvalidRequestException(InvalidRequestException ex) {
+
+        Map<String, String> error = new HashMap<>();
+
+        error.put("error", ex.getMessage());
+
+        return error;
+    }
+
+    @ExceptionHandler(ScheduleConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleScheduleConflictException(ScheduleConflictException ex) {
+
+        Map<String, String> error = new HashMap<>();
+
+        error.put("error", ex.getMessage());
+
+        return error;
+    }
+
 
 }

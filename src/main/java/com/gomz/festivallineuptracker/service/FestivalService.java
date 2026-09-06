@@ -28,6 +28,20 @@ public class FestivalService {
     }
 
 
+    private FestivalResponseDTO toResponse(Festival festival) {
+        return new FestivalResponseDTO(
+                festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(),
+                festival.getStartDate(), festival.getEndDate(), festival.getDescription(), festival.getImageUrl(),
+                festival.getOfficialWebsite(), festival.getGenre()
+        );
+    }
+
+
+
+
+
+
+
 
 
 
@@ -37,10 +51,7 @@ public class FestivalService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        return festivalRepository.findAll(pageable).map(festival -> new FestivalResponseDTO(
-                festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(), festival.getEndDate(), festival.getDescription(),
-                festival.getImageUrl(), festival.getOfficialWebsite(), festival.getGenre()
-        ));
+        return festivalRepository.findAll(pageable).map(this::toResponse);
     }
 
 
@@ -56,23 +67,17 @@ public class FestivalService {
         Festival festival = festivalRepository.findById(id).orElse(null);
 
         if (festival == null) {
-            throw new ResourceNotFoundException("Artist with id " + id + " not found");
+            throw new ResourceNotFoundException("Festival with id " + id + " not found");
         }
 
-        return new FestivalResponseDTO(
-                festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(), festival.getEndDate(), festival.getDescription(),
-                festival.getImageUrl(), festival.getOfficialWebsite(), festival.getGenre()
-        );
+        return toResponse(festival);
     }
 
 
     public List<FestivalResponseDTO> searchFestivals(String name) {
 
-        return festivalRepository.findByNameContaining(name).stream().map(festival -> new FestivalResponseDTO(
 
-                festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(), festival.getEndDate(),
-                festival.getDescription(), festival.getImageUrl(), festival.getOfficialWebsite(), festival.getGenre()
-        )).toList();
+        return festivalRepository.findByNameContaining(name).stream().map(this::toResponse).toList();
 
 
     }
@@ -102,11 +107,7 @@ public class FestivalService {
         festival.setGenre(dto.getGenre());
 
         Festival savedFestival = festivalRepository.save(festival);
-
-        return new FestivalResponseDTO(
-                savedFestival.getId(), savedFestival.getName(), savedFestival.getCity(), savedFestival.getCountry(), savedFestival.getVenue(), savedFestival.getStartDate(),
-                savedFestival.getEndDate(), savedFestival.getDescription(), savedFestival.getImageUrl(), savedFestival.getOfficialWebsite(), savedFestival.getGenre()
-        );
+        return toResponse(savedFestival);
     }
 
 
@@ -117,18 +118,18 @@ public class FestivalService {
         Festival festival = festivalRepository.findById(festivalId).orElse(null);
         Artist artist = artistRepository.findById(artistId).orElse(null);
 
-        if (festival == null || artist == null) {
-            throw new ResourceNotFoundException("Either Festival or Artist with id " + festivalId + artistId + " not found");
+        if (festival == null ) {
+            throw new ResourceNotFoundException("Festival with id " + festivalId + " not found");
+        } else if (artist == null) {
+
+            throw new ResourceNotFoundException("Artist with id " +  artistId + " not found");
+
         }
 
         festival.getArtists().add(artist);
 
         Festival savedFestival = festivalRepository.save(festival);
-
-        return new FestivalResponseDTO(
-                savedFestival.getId(), savedFestival.getName(), savedFestival.getCity(), savedFestival.getCountry(), savedFestival.getVenue(), savedFestival.getStartDate(),
-                savedFestival.getEndDate(), savedFestival.getDescription(), savedFestival.getImageUrl(), savedFestival.getOfficialWebsite(), savedFestival.getGenre()
-        );
+        return toResponse(savedFestival);
     }
 
 
@@ -162,11 +163,13 @@ public class FestivalService {
 
         Festival updatedFestival = festivalRepository.save(festival);
 
-        return new FestivalResponseDTO(
-                updatedFestival.getId(), updatedFestival.getName(), updatedFestival.getCity(), updatedFestival.getCountry(), updatedFestival.getVenue(),
-                updatedFestival.getStartDate(), updatedFestival.getEndDate(), updatedFestival.getDescription(), updatedFestival.getImageUrl(), updatedFestival.getOfficialWebsite(),
-                updatedFestival.getGenre()
-        );
+        // return new FestivalResponseDTO(
+        //         updatedFestival.getId(), updatedFestival.getName(), updatedFestival.getCity(), updatedFestival.getCountry(), updatedFestival.getVenue(),
+        //         updatedFestival.getStartDate(), updatedFestival.getEndDate(), updatedFestival.getDescription(), updatedFestival.getImageUrl(), updatedFestival.getOfficialWebsite(),
+        //         updatedFestival.getGenre()
+        // );
+
+        return toResponse(updatedFestival);
     }
 
 
@@ -241,4 +244,6 @@ public class FestivalService {
 
         return true;
     }
+
+
 }
