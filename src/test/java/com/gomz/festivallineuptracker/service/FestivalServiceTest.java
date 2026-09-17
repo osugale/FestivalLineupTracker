@@ -3,11 +3,15 @@ package com.gomz.festivallineuptracker.service;
 import com.gomz.festivallineuptracker.dto.ArtistResponseDTO;
 import com.gomz.festivallineuptracker.dto.FestivalRequestDTO;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
+import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.InvalidRequestException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Festival;
+import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.repository.ArtistRepository;
 import com.gomz.festivallineuptracker.repository.FestivalRepository;
+import com.gomz.festivallineuptracker.repository.GenreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +46,9 @@ class FestivalServiceTest {
     @Mock
     private ArtistRepository artistRepository;
 
+    @Mock
+    private GenreRepository genreRepository;
+
     @InjectMocks
     private FestivalService festivalService;
 
@@ -55,12 +63,15 @@ class FestivalServiceTest {
         festival.setCity("Idanha");
         festival.setCountry("Portugal");
         festival.setVenue("Idanha-a-Nova");
+        festival.setStartDate(LocalDate.of(2026, 7, 18));
+        festival.setEndDate(LocalDate.of(2026, 7, 25));
+        festival.setTimezone("Europe/Lisbon");
         festival.setArtists(new ArrayList<>());
 
         artist = new Artist();
         artist.setId(20);
         artist.setName("Four Tet");
-        artist.setGenre("Electronic");
+        artist.setSlug("four-tet");
         artist.setCountry("UK");
     }
 
@@ -83,6 +94,7 @@ class FestivalServiceTest {
 
         assertEquals(1, result.getId());
         assertEquals("Boom Festival", result.getName());
+        assertEquals("Europe/Lisbon", result.getTimezone());
     }
 
     @Test
@@ -94,43 +106,83 @@ class FestivalServiceTest {
 
     @Test
     void addFestival_savesAndReturnsDto() {
+        when(festivalRepository.existsByNameAndStartDate("Boom Festival", LocalDate.of(2026, 7, 18))).thenReturn(false);
         when(festivalRepository.save(any(Festival.class))).thenAnswer(invocation -> {
             Festival saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", 3);
             return saved;
         });
 
-        FestivalRequestDTO request = new FestivalRequestDTO("Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
-                null, null, null, null, null, "Electronic");
-
-        FestivalResponseDTO result = festivalService.addFestival(request);
+        FestivalResponseDTO result = festivalService.addFestival(validRequest());
 
         assertEquals(3, result.getId());
         assertEquals("Boom Festival", result.getName());
+        assertEquals("Europe/Lisbon", result.getTimezone());
+    }
+
+    @Test
+    void addFestival_invalidTimezone_rejected() {
+        FestivalRequestDTO request = validRequest();
+        request.setTimezone("Not/AZone");
+
+        assertThrows(InvalidRequestException.class, () -> festivalService.addFestival(request));
+    }
+
+    @Test
+    void addFestival_duplicateEdition_rejected() {
+        when(festivalRepository.existsByNameAndStartDate("Boom Festival", LocalDate.of(2026, 7, 18))).thenReturn(true);
+
+        assertThrows(DuplicateResourceException.class, () -> festivalService.addFestival(validRequest()));
+    }
+
+    @Test
+    void addFestival_endBeforeStart_rejected() {
+        FestivalRequestDTO request = validRequest();
+        request.setEndDate(LocalDate.of(2026, 7, 1));
+
+        assertThrows(InvalidRequestException.class, () -> festivalService.addFestival(request));
+    }
+
+    @Test
+    void addFestival_assignsMultipleGenres() {
+        Genre dnb = new Genre("Drum & Bass", "drum-and-bass");
+        ReflectionTestUtils.setField(dnb, "id", 4);
+        Genre jungle = new Genre("Jungle", "jungle");
+        ReflectionTestUtils.setField(jungle, "id", 5);
+        when(genreRepository.findById(4)).thenReturn(Optional.of(dnb));
+        when(genreRepository.findById(5)).thenReturn(Optional.of(jungle));
+        when(festivalRepository.existsByNameAndStartDate("Boom Festival", LocalDate.of(2026, 7, 18))).thenReturn(false);
+        when(festivalRepository.save(any(Festival.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FestivalRequestDTO request = validRequest();
+        request.setGenreIds(List.of(4, 5));
+
+        FestivalResponseDTO result = festivalService.addFestival(request);
+
+        assertEquals(2, result.getGenres().size());
     }
 
     @Test
     void updateFestival_found_updatesFields() {
         when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(festivalRepository.existsByNameAndStartDateAndIdNot("Updated", LocalDate.of(2026, 8, 1), 1)).thenReturn(false);
         when(festivalRepository.save(festival)).thenReturn(festival);
 
-        FestivalRequestDTO request = new FestivalRequestDTO("Updated", "Lisbon", "Portugal", "Venue",
-                null, null, null, null, null, "Rock");
+        FestivalRequestDTO request = new FestivalRequestDTO("Updated", "Lisbon", "Portugal", "TBA",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 2), null, null, null, "Europe/Lisbon");
 
         FestivalResponseDTO result = festivalService.updateFestival(1, request);
 
         assertEquals("Updated", result.getName());
         assertEquals("Lisbon", result.getCity());
+        assertEquals("TBA", result.getVenue());
     }
 
     @Test
     void updateFestival_missing_throwsNotFound() {
         when(festivalRepository.findById(99)).thenReturn(Optional.empty());
 
-        FestivalRequestDTO request = new FestivalRequestDTO("Updated", "Lisbon", "Portugal", "Venue",
-                null, null, null, null, null, "Rock");
-
-        assertThrows(ResourceNotFoundException.class, () -> festivalService.updateFestival(99, request));
+        assertThrows(ResourceNotFoundException.class, () -> festivalService.updateFestival(99, validRequest()));
     }
 
     @Test
@@ -162,6 +214,31 @@ class FestivalServiceTest {
     }
 
     @Test
+    void addFestival_sameDayEdition_isAllowed() {
+        when(festivalRepository.existsByNameAndStartDate("Boom Festival", LocalDate.of(2026, 7, 18))).thenReturn(false);
+        when(festivalRepository.save(any(Festival.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FestivalRequestDTO request = validRequest();
+        request.setEndDate(LocalDate.of(2026, 7, 18));
+
+        FestivalResponseDTO result = festivalService.addFestival(request);
+
+        assertEquals(LocalDate.of(2026, 7, 18), result.getEndDate());
+    }
+
+    @Test
+    void addArtistToFestival_doesNotRequireAPerformance() {
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
+        when(festivalRepository.save(festival)).thenReturn(festival);
+
+        festivalService.addArtistToFestival(1, 20);
+
+        assertEquals(1, festival.getArtists().size());
+        assertEquals(20, festival.getArtists().getFirst().getId());
+    }
+
+    @Test
     void addArtistToFestival_savesRelation() {
         when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
         when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
@@ -174,9 +251,17 @@ class FestivalServiceTest {
     }
 
     @Test
+    void addArtistToFestival_duplicate_rejected() {
+        festival.getArtists().add(artist);
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
+
+        assertThrows(DuplicateResourceException.class, () -> festivalService.addArtistToFestival(1, 20));
+    }
+
+    @Test
     void addArtistToFestival_missingFestival_throwsNotFound() {
         when(festivalRepository.findById(1)).thenReturn(Optional.empty());
-        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
 
         assertThrows(ResourceNotFoundException.class, () -> festivalService.addArtistToFestival(1, 20));
     }
@@ -220,5 +305,10 @@ class FestivalServiceTest {
         when(festivalRepository.existsById(99)).thenReturn(false);
 
         assertFalse(festivalService.deleteFestival(99));
+    }
+
+    private FestivalRequestDTO validRequest() {
+        return new FestivalRequestDTO("Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
+                LocalDate.of(2026, 7, 18), LocalDate.of(2026, 7, 25), null, null, null, "Europe/Lisbon");
     }
 }

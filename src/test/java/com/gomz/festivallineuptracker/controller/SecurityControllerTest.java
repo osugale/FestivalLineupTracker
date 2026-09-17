@@ -7,6 +7,7 @@ import com.gomz.festivallineuptracker.dto.StageResponseDTO;
 import com.gomz.festivallineuptracker.security.JwtAuthenticationFilter;
 import com.gomz.festivallineuptracker.service.ArtistService;
 import com.gomz.festivallineuptracker.service.FestivalService;
+import com.gomz.festivallineuptracker.service.GenreService;
 import com.gomz.festivallineuptracker.service.JwtService;
 import com.gomz.festivallineuptracker.service.PerformanceService;
 import com.gomz.festivallineuptracker.service.StageService;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ArtistController.class, FestivalController.class, StageController.class, PerformanceController.class})
+@WebMvcTest(controllers = {ArtistController.class, FestivalController.class, StageController.class, PerformanceController.class, GenreController.class})
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 
 class SecurityControllerTest {
@@ -42,7 +43,6 @@ class SecurityControllerTest {
             """
             {
               "name": "Test Artist",
-              "genre": "Rock",
               "country": "UK"
             }
             """;
@@ -53,7 +53,10 @@ class SecurityControllerTest {
               "name": "Test Festival",
               "city": "Lisbon",
               "country": "Portugal",
-              "venue": "Parque"
+              "venue": "Parque",
+              "startDate": "2026-07-18",
+              "endDate": "2026-07-19",
+              "timezone": "Europe/Lisbon"
             }
             """;
 
@@ -76,6 +79,9 @@ class SecurityControllerTest {
 
     @MockitoBean
     private StageService stageService;
+
+    @MockitoBean
+    private GenreService genreService;
 
     @MockitoBean
     private PerformanceService performanceService;
@@ -118,7 +124,7 @@ class SecurityControllerTest {
     @WithMockUser(roles = "ADMIN")
     void postArtists_withAdminRole_isAllowed() throws Exception {
         when(artistService.addArtist(any())).thenReturn(
-                new ArtistResponseDTO("Test Artist", "Rock", "UK", null, null, null, null, null, null, 1)
+                new ArtistResponseDTO(1, "Test Artist", "test-artist", "UK", null, null, null, null, null, null, List.of())
         );
 
         mockMvc.perform(post("/artists").contentType(MediaType.APPLICATION_JSON).content(ARTIST_JSON)).andExpect(status().isCreated());
@@ -146,7 +152,9 @@ class SecurityControllerTest {
     @WithMockUser(roles = "ADMIN")
     void postFestivals_withAdminRole_isAllowed() throws Exception {
         when(festivalService.addFestival(any())).thenReturn(
-                new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque", null, null, null, null, null, "Rock")
+                new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque",
+                        java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 19), "Europe/Lisbon",
+                        null, null, null, null, List.of())
         );
 
         mockMvc.perform(post("/festivals").contentType(MediaType.APPLICATION_JSON).content(FESTIVAL_JSON)).andExpect(status().isCreated());
@@ -180,7 +188,7 @@ class SecurityControllerTest {
     @WithMockUser(roles = "ADMIN")
     void putArtists_withAdminRole_isAllowed() throws Exception {
         when(artistService.updateArtist(anyInt(), any())).thenReturn(
-                new ArtistResponseDTO("Test Artist", "Rock", "UK", null, null, null, null, null, null, 1)
+                new ArtistResponseDTO(1, "Test Artist", "test-artist", "UK", null, null, null, null, null, null, List.of())
         );
 
         mockMvc.perform(put("/artists/1").contentType(MediaType.APPLICATION_JSON).content(ARTIST_JSON))
@@ -223,7 +231,9 @@ class SecurityControllerTest {
     @WithMockUser(roles = "ADMIN")
     void putFestivals_withAdminRole_isAllowed() throws Exception {
         when(festivalService.updateFestival(anyInt(), any())).thenReturn(
-                new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque", null, null, null, null, null, "Rock")
+                new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque",
+                        java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 19), "Europe/Lisbon",
+                        null, null, null, null, List.of())
         );
 
         mockMvc.perform(put("/festivals/1").contentType(MediaType.APPLICATION_JSON).content(FESTIVAL_JSON))
@@ -310,6 +320,35 @@ class SecurityControllerTest {
     @WithMockUser(roles = "ADMIN")
     void deleteStages_withAdminRole_isAllowed() throws Exception {
         mockMvc.perform(delete("/admin/stages/10")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getFestivalStages_withoutJwt_returns200() throws Exception {
+        when(stageService.getStagesForFestival(1)).thenReturn(List.of());
+
+        mockMvc.perform(get("/festivals/1/stages")).andExpect(status().isOk());
+    }
+
+    @Test
+    void getGenres_withoutJwt_returns200() throws Exception {
+        when(genreService.getGenres()).thenReturn(List.of());
+
+        mockMvc.perform(get("/genres")).andExpect(status().isOk());
+    }
+
+    @Test
+    void postGenres_withoutJwt_returns401() throws Exception {
+        mockMvc.perform(post("/genres").contentType(MediaType.APPLICATION_JSON).content("""
+                { "name": "Techno" }
+                """)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void postGenres_withUserRole_returns403() throws Exception {
+        mockMvc.perform(post("/genres").contentType(MediaType.APPLICATION_JSON).content("""
+                { "name": "Techno" }
+                """)).andExpect(status().isForbidden());
     }
 
     @Test

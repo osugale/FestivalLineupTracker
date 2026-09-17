@@ -89,7 +89,6 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(post("/performances").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.festivalId").exists())
-                .andExpect(jsonPath("$.artistId").exists())
-                .andExpect(jsonPath("$.stageId").exists());
+                .andExpect(jsonPath("$.artistId").exists());
     }
 }

@@ -39,7 +39,6 @@ class ArtistControllerTest {
     private static final String ARTIST_JSON = """
             {
               "name": "Four Tet",
-              "genre": "Electronic",
               "country": "UK"
             }
             """;
@@ -75,7 +74,7 @@ class ArtistControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Four Tet"))
-                .andExpect(jsonPath("$.genre").value("Electronic"))
+                .andExpect(jsonPath("$.slug").value("four-tet"))
                 .andExpect(jsonPath("$.country").value("UK"));
     }
 
@@ -105,7 +104,6 @@ class ArtistControllerTest {
         String invalidJson = """
                 {
                   "name": "",
-                  "genre": "Electronic",
                   "country": "UK"
                 }
                 """;
@@ -156,7 +154,8 @@ class ArtistControllerTest {
     void getFestivalsOfArtist_returnsList() throws Exception {
         when(artistService.getFestivalsOfArtist(1)).thenReturn(List.of(
                 new FestivalResponseDTO(8, "Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
-                        null, null, null, null, null, "Electronic")
+                        java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 25), "Europe/Lisbon",
+                        null, null, null, null, List.of())
         ));
 
         mockMvc.perform(get("/artists/1/festivals"))
@@ -166,6 +165,6 @@ class ArtistControllerTest {
     }
 
     private ArtistResponseDTO sampleArtist() {
-        return new ArtistResponseDTO("Four Tet", "Electronic", "UK", null, null, null, null, null, null, 1);
+        return new ArtistResponseDTO(1, "Four Tet", "four-tet", "UK", null, null, null, null, null, null, List.of());
     }
 }

@@ -79,5 +79,13 @@ public class GlobalExceptionHandler {
         return error;
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "The request conflicts with an existing record");
+        return error;
+    }
+
 
 }

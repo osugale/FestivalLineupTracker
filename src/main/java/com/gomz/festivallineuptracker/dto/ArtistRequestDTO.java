@@ -1,18 +1,15 @@
 package com.gomz.festivallineuptracker.dto;
 
-import com.gomz.festivallineuptracker.model.Festival;
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ArtistRequestDTO {
 
     @NotBlank(message = "Artist name cannot be blank")
     private String name;
-    @NotBlank(message = "Artist genre cannot be blank")
-    private String genre;
     @NotBlank(message = "Artist Country cannot be blank")
     private String country;
 
@@ -25,6 +22,8 @@ public class ArtistRequestDTO {
     @Size(max = 1000, message = "Bio cannot exceed 1000 characters")
     private String bio;
 
+    private List<Integer> genreIds = new ArrayList<>();
+
 
     public ArtistRequestDTO(){
 
@@ -33,9 +32,8 @@ public class ArtistRequestDTO {
 
 
 
-    public ArtistRequestDTO (String name,String genre,String country,  String imageUrl, String spotifyUrl, String instagramUrl,
+    public ArtistRequestDTO (String name, String country,  String imageUrl, String spotifyUrl, String instagramUrl,
                   String soundcloudUrl, String youtubeUrl, String bio){
-        this.genre=genre;
         this.name=name;
         this.country=country;
         this.imageUrl = imageUrl;
@@ -45,10 +43,10 @@ public class ArtistRequestDTO {
         this.youtubeUrl = youtubeUrl;
         this.bio = bio;
 
+
     }
 
 
-    public String getGenre() {return genre;}
     public String getName() {return name;}
     public String getBio() {return bio;}
     public String getImageUrl() {return imageUrl;}
@@ -57,12 +55,11 @@ public class ArtistRequestDTO {
     public String getSoundcloudUrl() {return soundcloudUrl;}
     public String getSpotifyUrl() {return spotifyUrl;}
     public String getYoutubeUrl() {return youtubeUrl;}
-
+    public List<Integer> getGenreIds() {return genreIds;}
 
 
 
     public void setName(String name) {this.name = name;}
-    public void setGenre(String genre) {this.genre = genre;}
     public void setBio(String bio) {this.bio = bio;}
     public void setImageUrl(String imageUrl) {this.imageUrl = imageUrl;}
     public void setInstagramUrl(String instagramUrl) {this.instagramUrl = instagramUrl;}
@@ -70,4 +67,7 @@ public class ArtistRequestDTO {
     public void setSpotifyUrl(String spotifyUrl) {this.spotifyUrl = spotifyUrl;}
     public void setYoutubeUrl(String youtubeUrl) {this.youtubeUrl = youtubeUrl;}
     public void setCountry(String country) {this.country = country;}
+    public void setGenreIds(List<Integer> genreIds) {
+        this.genreIds = genreIds == null ? new ArrayList<>() : genreIds;
+    }
 }

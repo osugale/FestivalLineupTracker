@@ -1,6 +1,8 @@
 package com.gomz.festivallineuptracker.dto;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FestivalResponseDTO {
 
@@ -11,11 +13,12 @@ public class FestivalResponseDTO {
     private String venue;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String timezone;
     private String description;
     private String imageUrl;
     private String officialWebsite;
-    private String genre;
-
+    private String timetableUrl;
+    private List<GenreResponseDTO> genres = new ArrayList<>();
 
 
 
@@ -31,7 +34,8 @@ public class FestivalResponseDTO {
     }
 
     public FestivalResponseDTO(int id,String name, String city,String country,String venue, LocalDate startDate, LocalDate endDate,
-                              String description, String imageUrl, String officialWebsite, String genre) {
+                              String timezone, String description, String imageUrl, String officialWebsite, String timetableUrl,
+                              List<GenreResponseDTO> genres) {
         this.id=id;
         this.name = name;
         this.city = city;
@@ -39,10 +43,12 @@ public class FestivalResponseDTO {
         this.venue = venue;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.timezone = timezone;
         this.description = description;
         this.imageUrl = imageUrl;
         this.officialWebsite = officialWebsite;
-        this.genre = genre;
+        this.timetableUrl = timetableUrl;
+        this.genres = genres == null ? new ArrayList<>() : genres;
     }
 
 
@@ -53,10 +59,12 @@ public class FestivalResponseDTO {
     public String getVenue() {return venue;}
     public LocalDate getStartDate() {return startDate;}
     public LocalDate getEndDate() {return endDate;}
+    public String getTimezone() {return timezone;}
     public String getDescription() {return description;}
     public String getImageUrl() {return imageUrl;}
     public String getOfficialWebsite() {return officialWebsite;}
-    public String getGenre() {return genre;}
+    public String getTimetableUrl() {return timetableUrl;}
+    public List<GenreResponseDTO> getGenres() {return genres;}
 
 
     public void setId(int id) {this.id = id;}
@@ -65,10 +73,14 @@ public class FestivalResponseDTO {
     public void setCountry(String country) {this.country = country;}
     public void setDescription(String description) {this.description = description;}
     public void setEndDate(LocalDate endDate) {this.endDate = endDate;}
-    public void setGenre(String genre) {this.genre = genre;}
+    public void setTimezone(String timezone) {this.timezone = timezone;}
     public void setImageUrl(String imageUrl) {this.imageUrl = imageUrl;}
     public void setOfficialWebsite(String festivalOfficialWebsite) {this.officialWebsite = festivalOfficialWebsite;}
+    public void setTimetableUrl(String timetableUrl) {this.timetableUrl = timetableUrl;}
     public void setStartDate(LocalDate startDate) {this.startDate = startDate;}
     public void setVenue(String venue) {this.venue = venue;}
+    public void setGenres(List<GenreResponseDTO> genres) {
+        this.genres = genres == null ? new ArrayList<>() : genres;
+    }
 
 }

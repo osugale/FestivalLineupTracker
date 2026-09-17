@@ -2,105 +2,68 @@ package com.gomz.festivallineuptracker.service;
 
 import com.gomz.festivallineuptracker.dto.ArtistRequestDTO;
 import com.gomz.festivallineuptracker.dto.ArtistResponseDTO;
+import com.gomz.festivallineuptracker.dto.ResponseMapper;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
+import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.InvalidRequestException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
+import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.util.SlugNormalizer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
+@Transactional
 public class ArtistService {
 
     private final ArtistRepository artistRepository;
+    private final GenreRepository genreRepository;
 
-    public ArtistService(ArtistRepository artistRepository) {
+    public ArtistService(ArtistRepository artistRepository, GenreRepository genreRepository) {
         this.artistRepository = artistRepository;
+        this.genreRepository = genreRepository;
     }
-
-
-
-    private ArtistResponseDTO toResponse(Artist artist) {
-        return new ArtistResponseDTO(
-                artist.getName(), artist.getGenre(), artist.getCountry(),
-                artist.getImageUrl(), artist.getSpotifyUrl(), artist.getInstagramUrl(), artist.getSoundcloudUrl(), artist.getYoutubeUrl(),
-                artist.getBio(), artist.getId()
-        );
-    }
-
-
-
-
 
 
 
 
     public Page<ArtistResponseDTO> getArtists(int page, int size, String sortBy) {
-
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-
-
-        return artistRepository.findAll(pageable).map(this::toResponse);
-
+        return artistRepository.findAll(pageable).map(ResponseMapper::toArtistResponse);
     }
-
-
-
-
 
 
 
 
     public ArtistResponseDTO getArtistById(int id) {
-
-        Artist artist = artistRepository.findById(id).orElse(null);
-
-        if (artist == null) {
-            throw new ResourceNotFoundException("Artist with id " + id + " not found");
-        }
-
-        return toResponse(artist);
-
+        return ResponseMapper.toArtistResponse(findArtist(id));
     }
-
-
-
-
-
-
-
 
 
 
 
 
     public ArtistResponseDTO addArtist(ArtistRequestDTO artistDTO) {
+        String slug = requireSlug(artistDTO.getName());
+        assertSlugAvailable(slug, null);
 
         Artist artist = new Artist();
+        applyArtistFields(artist, artistDTO, slug);
+        artist.setGenres(resolveGenres(artistDTO.getGenreIds()));
 
-        artist.setName(artistDTO.getName());
-        artist.setGenre(artistDTO.getGenre());
-        artist.setCountry(artistDTO.getCountry());
-        artist.setImageUrl(artistDTO.getImageUrl());
-        artist.setSpotifyUrl(artistDTO.getSpotifyUrl());
-        artist.setInstagramUrl(artistDTO.getInstagramUrl());
-        artist.setSoundcloudUrl(artistDTO.getSoundcloudUrl());
-        artist.setYoutubeUrl(artistDTO.getYoutubeUrl());
-        artist.setBio(artistDTO.getBio());
-
-        Artist savedArtist = artistRepository.save(artist);
-
-        return toResponse(savedArtist);
+        return ResponseMapper.toArtistResponse(artistRepository.save(artist));
     }
-
-
-
-
 
 
 
@@ -108,31 +71,15 @@ public class ArtistService {
 
 
     public ArtistResponseDTO updateArtist(int id, ArtistRequestDTO dto) {
+        Artist artist = findArtist(id);
+        String slug = requireSlug(dto.getName());
+        assertSlugAvailable(slug, id);
 
-        Artist artist = artistRepository.findById(id).orElse(null);
+        applyArtistFields(artist, dto, slug);
+        artist.setGenres(resolveGenres(dto.getGenreIds()));
 
-        if (artist == null) {
-            throw new ResourceNotFoundException("Artist with id " + id + " not found");
-        }
-
-        artist.setName(dto.getName());
-        artist.setGenre(dto.getGenre());
-        artist.setCountry(dto.getCountry());
-        artist.setImageUrl(dto.getImageUrl());
-        artist.setSpotifyUrl(dto.getSpotifyUrl());
-        artist.setInstagramUrl(dto.getInstagramUrl());
-        artist.setSoundcloudUrl(dto.getSoundcloudUrl());
-        artist.setYoutubeUrl(dto.getYoutubeUrl());
-        artist.setBio(dto.getBio());
-
-        Artist updatedArtist = artistRepository.save(artist);
-
-        return toResponse(updatedArtist);
+        return ResponseMapper.toArtistResponse(artistRepository.save(artist));
     }
-
-
-
-
 
 
 
@@ -140,12 +87,8 @@ public class ArtistService {
 
 
     public List<ArtistResponseDTO> searchArtists(String name) {
-
-        return artistRepository.findByNameContaining(name).stream().map(this::toResponse).toList();
+        return artistRepository.findByNameContaining(name).stream().map(ResponseMapper::toArtistResponse).toList();
     }
-
-
-
 
 
 
@@ -153,36 +96,99 @@ public class ArtistService {
 
 
     public List<FestivalResponseDTO> getFestivalsOfArtist(int artistId) {
-
-        Artist artist = artistRepository.findById(artistId).orElse(null);
-
-        if (artist == null) {
-            throw new ResourceNotFoundException("Artist with id " + artistId + " not found");
-        }
-
-        return artist.getFestivals().stream().map(festival -> new FestivalResponseDTO
-                (festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(), festival.getEndDate(), festival.getDescription(), festival.getImageUrl(),
-                festival.getOfficialWebsite(),
-                festival.getGenre()
-        )).toList();
+        Artist artist = findArtist(artistId);
+        return artist.getFestivals().stream().map(ResponseMapper::toFestivalResponse).toList();
     }
 
-
-
-
-
-
-
-
-
     public boolean deleteArtist(int id) {
-
         if (!artistRepository.existsById(id)) {
             return false;
         }
-
         artistRepository.deleteById(id);
         return true;
     }
 
+
+
+
+    private Artist findArtist(int id) {
+        return artistRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artist with id " + id + " not found"));
+    }
+
+
+
+
+
+
+    private void applyArtistFields(Artist artist, ArtistRequestDTO dto, String slug) {
+        artist.setName(dto.getName().trim());
+        artist.setSlug(slug);
+        artist.setCountry(dto.getCountry().trim());
+        artist.setImageUrl(dto.getImageUrl());
+        artist.setSpotifyUrl(dto.getSpotifyUrl());
+        artist.setInstagramUrl(dto.getInstagramUrl());
+        artist.setSoundcloudUrl(dto.getSoundcloudUrl());
+        artist.setYoutubeUrl(dto.getYoutubeUrl());
+        artist.setBio(dto.getBio());
+    }
+
+
+
+
+
+
+
+
+    private String requireSlug(String name) {
+        if (name == null || name.isBlank()) {
+            throw new InvalidRequestException("Artist name cannot be blank");
+        }
+        String slug = SlugNormalizer.fromName(name);
+        if (slug.isBlank()) {
+            throw new InvalidRequestException("Artist name does not produce a valid slug");
+        }
+        return slug;
+    }
+
+
+
+
+
+
+
+
+    private void assertSlugAvailable(String slug, Integer excludeId) {
+        boolean taken = excludeId == null
+                ? artistRepository.existsBySlug(slug)
+                : artistRepository.existsBySlugAndIdNot(slug, excludeId);
+        if (taken) {
+            throw new DuplicateResourceException("Artist with normalized name '" + slug + "' already exists");
+        }
+    }
+
+
+
+
+
+
+
+
+    private Set<Genre> resolveGenres(List<Integer> genreIds) {
+        Set<Integer> uniqueIds = new LinkedHashSet<>();
+        if (genreIds != null) {
+            for (Integer genreId : genreIds) {
+                if (genreId != null) {
+                    uniqueIds.add(genreId);
+                }
+            }
+        }
+        Set<Genre> genres = new LinkedHashSet<>();
+        for (Integer genreId : uniqueIds) {
+            Genre genre = genreRepository.findById(genreId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Genre with id " + genreId + " not found"));
+            genres.add(genre);
+        }
+        return genres;
+    }
 }

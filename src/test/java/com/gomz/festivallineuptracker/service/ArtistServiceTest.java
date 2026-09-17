@@ -3,10 +3,13 @@ package com.gomz.festivallineuptracker.service;
 import com.gomz.festivallineuptracker.dto.ArtistRequestDTO;
 import com.gomz.festivallineuptracker.dto.ArtistResponseDTO;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
+import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Festival;
+import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.GenreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +42,9 @@ class ArtistServiceTest {
     @Mock
     private ArtistRepository artistRepository;
 
+    @Mock
+    private GenreRepository genreRepository;
+
     @InjectMocks
     private ArtistService artistService;
 
@@ -48,7 +55,7 @@ class ArtistServiceTest {
         artist = new Artist();
         artist.setId(1);
         artist.setName("Four Tet");
-        artist.setGenre("Electronic");
+        artist.setSlug("four-tet");
         artist.setCountry("UK");
         artist.setFestivals(new ArrayList<>());
     }
@@ -72,6 +79,7 @@ class ArtistServiceTest {
 
         assertEquals(1, result.getId());
         assertEquals("Four Tet", result.getName());
+        assertEquals("four-tet", result.getSlug());
     }
 
     @Test
@@ -83,32 +91,63 @@ class ArtistServiceTest {
 
     @Test
     void addArtist_savesAndReturnsDto() {
+        when(artistRepository.existsBySlug("four-tet")).thenReturn(false);
         when(artistRepository.save(any(Artist.class))).thenAnswer(invocation -> {
             Artist saved = invocation.getArgument(0);
             saved.setId(5);
             return saved;
         });
 
-        ArtistRequestDTO request = new ArtistRequestDTO("Four Tet", "Electronic", "UK", null, null, null, null, null, null);
+        ArtistRequestDTO request = new ArtistRequestDTO("Four Tet", "UK", null, null, null, null, null, null);
 
         ArtistResponseDTO result = artistService.addArtist(request);
 
         assertEquals(5, result.getId());
         assertEquals("Four Tet", result.getName());
+        assertEquals("four-tet", result.getSlug());
         verify(artistRepository).save(any(Artist.class));
+    }
+
+    @Test
+    void addArtist_normalizesAmpersandDuplicates() {
+        when(artistRepository.existsBySlug("chase-and-status")).thenReturn(true);
+
+        ArtistRequestDTO request = new ArtistRequestDTO("Chase & Status", "UK", null, null, null, null, null, null);
+
+        assertThrows(DuplicateResourceException.class, () -> artistService.addArtist(request));
+    }
+
+    @Test
+    void addArtist_assignsMultipleGenres() {
+        Genre dnb = new Genre("Drum & Bass", "drum-and-bass");
+        ReflectionTestUtils.setField(dnb, "id", 2);
+        Genre jungle = new Genre("Jungle", "jungle");
+        ReflectionTestUtils.setField(jungle, "id", 3);
+        when(genreRepository.findById(2)).thenReturn(Optional.of(dnb));
+        when(genreRepository.findById(3)).thenReturn(Optional.of(jungle));
+        when(artistRepository.existsBySlug("four-tet")).thenReturn(false);
+        when(artistRepository.save(any(Artist.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ArtistRequestDTO request = new ArtistRequestDTO("Four Tet", "UK", null, null, null, null, null, null);
+        request.setGenreIds(List.of(2, 3));
+
+        ArtistResponseDTO result = artistService.addArtist(request);
+
+        assertEquals(2, result.getGenres().size());
     }
 
     @Test
     void updateArtist_found_updatesFields() {
         when(artistRepository.findById(1)).thenReturn(Optional.of(artist));
+        when(artistRepository.existsBySlugAndIdNot("new-name", 1)).thenReturn(false);
         when(artistRepository.save(artist)).thenReturn(artist);
 
-        ArtistRequestDTO request = new ArtistRequestDTO("New Name", "Jazz", "US", null, null, null, null, null, null);
+        ArtistRequestDTO request = new ArtistRequestDTO("New Name", "US", null, null, null, null, null, null);
 
         ArtistResponseDTO result = artistService.updateArtist(1, request);
 
         assertEquals("New Name", result.getName());
-        assertEquals("Jazz", result.getGenre());
+        assertEquals("new-name", result.getSlug());
         verify(artistRepository).save(artist);
     }
 
@@ -116,7 +155,7 @@ class ArtistServiceTest {
     void updateArtist_missing_throwsNotFound() {
         when(artistRepository.findById(99)).thenReturn(Optional.empty());
 
-        ArtistRequestDTO request = new ArtistRequestDTO("New Name", "Jazz", "US", null, null, null, null, null, null);
+        ArtistRequestDTO request = new ArtistRequestDTO("New Name", "US", null, null, null, null, null, null);
 
         assertThrows(ResourceNotFoundException.class, () -> artistService.updateArtist(99, request));
     }
@@ -139,6 +178,9 @@ class ArtistServiceTest {
         festival.setCity("Idanha");
         festival.setCountry("Portugal");
         festival.setVenue("Idanha-a-Nova");
+        festival.setStartDate(LocalDate.of(2026, 7, 18));
+        festival.setEndDate(LocalDate.of(2026, 7, 25));
+        festival.setTimezone("Europe/Lisbon");
         artist.setFestivals(List.of(festival));
         when(artistRepository.findById(1)).thenReturn(Optional.of(artist));
 

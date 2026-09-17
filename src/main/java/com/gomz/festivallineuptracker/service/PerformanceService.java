@@ -14,12 +14,16 @@ import com.gomz.festivallineuptracker.repository.ArtistRepository;
 import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.PerformanceRepository;
 import com.gomz.festivallineuptracker.repository.StageRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
 public class PerformanceService {
 
     private final PerformanceRepository performanceRepository;
@@ -63,8 +67,8 @@ public class PerformanceService {
 
 
 
-    public List<PerformanceResponseDTO> getAllPerformances() {
-        return performanceRepository.findAll().stream().map(this::toResponse).toList();
+    public Page<PerformanceResponseDTO> getAllPerformances(int page, int size) {
+        return performanceRepository.findAll(PageRequest.of(page, size)).map(this::toResponse);
     }
 
 
@@ -129,10 +133,13 @@ public class PerformanceService {
     private void applyRequest(Performance performance, PerformanceRequestDTO request, Integer excludePerformanceId) {
         Festival festival = findFestival(request.getFestivalId());
         Artist artist = findArtist(request.getArtistId());
-        Stage stage = findStage(request.getStageId());
+        Stage stage = null;
 
-        if (stage.getFestival().getId() != festival.getId()) {
-            throw new InvalidRequestException("Stage does not belong to the selected festival");
+        if (request.getStageId() != null) {
+            stage = findStage(request.getStageId());
+            if (stage.getFestival().getId() != festival.getId()) {
+                throw new InvalidRequestException("Stage does not belong to the selected festival");
+            }
         }
 
         ScheduleStatus scheduleStatus = request.getScheduleStatus();
@@ -144,16 +151,25 @@ public class PerformanceService {
         LocalDateTime endsAt = request.getEndsAt();
 
         if (scheduleStatus == ScheduleStatus.SCHEDULED) {
+            if (stage == null) {
+                throw new InvalidRequestException("stageId is required when scheduleStatus is SCHEDULED");
+            }
             if (startsAt == null || endsAt == null) {
                 throw new InvalidRequestException("startsAt and endsAt are required when scheduleStatus is SCHEDULED");
             }
+            if (!festival.getArtists().stream().anyMatch(lineupArtist -> lineupArtist.getId() == artist.getId())) {
+                throw new InvalidRequestException("Performance artist must belong to the selected festival lineup");
+            }
+            validateFestivalScheduleBounds(festival, startsAt, endsAt);
         }
 
         if (startsAt != null && endsAt != null) {
             if (!endsAt.isAfter(startsAt)) {
                 throw new InvalidRequestException("endsAt must be after startsAt");
             }
-            assertNoScheduleConflicts(excludePerformanceId, stage.getId(), artist.getId(), startsAt, endsAt);
+            if (scheduleStatus == ScheduleStatus.SCHEDULED) {
+                assertNoScheduleConflicts(excludePerformanceId, stage.getId(), artist.getId(), startsAt, endsAt);
+            }
         }
 
         performance.setFestival(festival);
@@ -162,6 +178,15 @@ public class PerformanceService {
         performance.setScheduleStatus(scheduleStatus);
         performance.setStartsAt(startsAt);
         performance.setEndsAt(endsAt);
+    }
+
+    private void validateFestivalScheduleBounds(Festival festival, LocalDateTime startsAt, LocalDateTime endsAt) {
+        LocalDateTime festivalStartsAt = festival.getStartDate().atStartOfDay();
+        LocalDateTime festivalEndsAtExclusive = festival.getEndDate().plusDays(1).atStartOfDay();
+
+        if (startsAt.isBefore(festivalStartsAt) || endsAt.isAfter(festivalEndsAtExclusive)) {
+            throw new InvalidRequestException("Scheduled performance must fall within the festival date range");
+        }
     }
 
 
@@ -176,17 +201,21 @@ public class PerformanceService {
 
 
 
-    private void assertNoScheduleConflicts(Integer excludePerformanceId, int stageId, int artistId,
+    private void assertNoScheduleConflicts(Integer excludePerformanceId, Integer stageId, int artistId,
                                            LocalDateTime startsAt, LocalDateTime endsAt) {
-        boolean stageOverlap;
+        boolean stageOverlap = false;
         boolean artistOverlap;
 
         if (excludePerformanceId == null) {
-            stageOverlap = performanceRepository.existsByStage_IdAndStartsAtLessThanAndEndsAtGreaterThan(stageId, endsAt, startsAt);
+            if (stageId != null) {
+                stageOverlap = performanceRepository.existsByStage_IdAndStartsAtLessThanAndEndsAtGreaterThan(stageId, endsAt, startsAt);
+            }
             artistOverlap = performanceRepository.existsByArtist_IdAndStartsAtLessThanAndEndsAtGreaterThan(artistId, endsAt, startsAt);
         } else {
-            stageOverlap = performanceRepository.existsByStage_IdAndIdNotAndStartsAtLessThanAndEndsAtGreaterThan(
-                    stageId, excludePerformanceId, endsAt, startsAt);
+            if (stageId != null) {
+                stageOverlap = performanceRepository.existsByStage_IdAndIdNotAndStartsAtLessThanAndEndsAtGreaterThan(
+                        stageId, excludePerformanceId, endsAt, startsAt);
+            }
             artistOverlap = performanceRepository.existsByArtist_IdAndIdNotAndStartsAtLessThanAndEndsAtGreaterThan(
                     artistId, excludePerformanceId, endsAt, startsAt);
         }

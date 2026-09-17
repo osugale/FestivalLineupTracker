@@ -3,10 +3,12 @@ package com.gomz.festivallineuptracker.service;
 import com.gomz.festivallineuptracker.dto.StageRequestDTO;
 import com.gomz.festivallineuptracker.dto.StageResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.InvalidRequestException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Festival;
 import com.gomz.festivallineuptracker.model.Stage;
 import com.gomz.festivallineuptracker.repository.FestivalRepository;
+import com.gomz.festivallineuptracker.repository.PerformanceRepository;
 import com.gomz.festivallineuptracker.repository.StageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,9 @@ class StageServiceTest {
 
     @Mock
     private FestivalRepository festivalRepository;
+
+    @Mock
+    private PerformanceRepository performanceRepository;
 
     @InjectMocks
     private StageService stageService;
@@ -82,6 +87,24 @@ class StageServiceTest {
     }
 
     @Test
+    void getStagesForFestival_returnsOrderedStages() {
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(stageRepository.findByFestival_IdOrderByNameAsc(1)).thenReturn(List.of(stage));
+
+        List<StageResponseDTO> result = stageService.getStagesForFestival(1);
+
+        assertEquals(1, result.size());
+        assertEquals("Main Stage", result.getFirst().getName());
+    }
+
+    @Test
+    void getStagesForFestival_missingFestival_throwsNotFound() {
+        when(festivalRepository.findById(99)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> stageService.getStagesForFestival(99));
+    }
+
+    @Test
     void getAllStages_returnsList() {
         when(stageRepository.findAll()).thenReturn(List.of(stage));
 
@@ -102,6 +125,21 @@ class StageServiceTest {
 
         assertEquals("Side Stage", result.getName());
         verify(stageRepository).save(stage);
+    }
+
+    @Test
+    void updateStage_cannotMoveStageWithPerformancesToAnotherFestival() {
+        Festival otherFestival = new Festival();
+        ReflectionTestUtils.setField(otherFestival, "id", 2);
+        when(stageRepository.findById(10)).thenReturn(Optional.of(stage));
+        when(festivalRepository.findById(2)).thenReturn(Optional.of(otherFestival));
+        when(performanceRepository.existsByStage_Id(10)).thenReturn(true);
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                () -> stageService.updateStage(10, request(2, "Main Stage")));
+
+        assertEquals("A stage with performances cannot be moved to another festival", exception.getMessage());
+        verify(stageRepository, never()).save(any());
     }
 
     @Test

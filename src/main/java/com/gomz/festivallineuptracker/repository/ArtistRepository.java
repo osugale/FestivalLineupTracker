@@ -10,9 +10,14 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 
+@Repository
 public interface ArtistRepository extends JpaRepository<Artist,Integer> {
 
     List<Artist> findByNameContaining(String name);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, int id);
 
 
 

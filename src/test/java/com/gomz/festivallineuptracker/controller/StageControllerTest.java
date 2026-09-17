@@ -54,8 +54,20 @@ class StageControllerTest {
     private UserDetailsService userDetailsService;
 
     @Test
+    void getFestivalStages_withoutJwt_returns200() throws Exception {
+        when(stageService.getStagesForFestival(1)).thenReturn(List.of(sampleStage()));
+
+        mockMvc.perform(get("/festivals/1/stages"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(10))
+                .andExpect(jsonPath("$[0].festivalId").value(1))
+                .andExpect(jsonPath("$[0].festivalName").value("Boom Festival"))
+                .andExpect(jsonPath("$[0].name").value("Main Stage"));
+    }
+
+    @Test
     @WithMockUser(roles = "USER")
-    void getAllStages_authenticated_returns200() throws Exception {
+    void getAdminStages_authenticated_returns200() throws Exception {
         when(stageService.getAllStages()).thenReturn(List.of(sampleStage()));
 
         mockMvc.perform(get("/admin/stages"))
@@ -64,6 +76,15 @@ class StageControllerTest {
                 .andExpect(jsonPath("$[0].festivalId").value(1))
                 .andExpect(jsonPath("$[0].festivalName").value("Boom Festival"))
                 .andExpect(jsonPath("$[0].name").value("Main Stage"));
+    }
+
+    @Test
+    void getPublicStageById_withoutJwt_returns200() throws Exception {
+        when(stageService.getStageById(10)).thenReturn(sampleStage());
+
+        mockMvc.perform(get("/stages/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10));
     }
 
     @Test

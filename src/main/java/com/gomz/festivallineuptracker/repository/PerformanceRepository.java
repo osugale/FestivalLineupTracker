@@ -14,6 +14,8 @@ public interface PerformanceRepository extends JpaRepository<Performance, Intege
 
     List<Performance> findByArtist_Id(int artistId);
 
+    boolean existsByStage_Id(int stageId);
+
     boolean existsByStage_IdAndStartsAtLessThanAndEndsAtGreaterThan(int stageId, LocalDateTime endsAt, LocalDateTime startsAt);
 
     boolean existsByStage_IdAndIdNotAndStartsAtLessThanAndEndsAtGreaterThan(int stageId, int id, LocalDateTime endsAt, LocalDateTime startsAt);

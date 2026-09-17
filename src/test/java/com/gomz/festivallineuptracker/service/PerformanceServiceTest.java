@@ -20,9 +20,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,6 +68,9 @@ class PerformanceServiceTest {
         festival = new Festival();
         ReflectionTestUtils.setField(festival, "id", 1);
         festival.setName("Boom Festival");
+        festival.setStartDate(LocalDate.of(2026, 8, 1));
+        festival.setEndDate(LocalDate.of(2026, 8, 2));
+        festival.setArtists(new ArrayList<>());
 
         stage = new Stage(festival, "Main Stage");
         ReflectionTestUtils.setField(stage, "id", 10);
@@ -70,6 +78,7 @@ class PerformanceServiceTest {
         artist = new Artist();
         artist.setId(20);
         artist.setName("Four Tet");
+        festival.getArtists().add(artist);
 
         startsAt = LocalDateTime.of(2026, 8, 1, 18, 0);
         endsAt = LocalDateTime.of(2026, 8, 1, 19, 30);
@@ -111,12 +120,12 @@ class PerformanceServiceTest {
 
     @Test
     void getAllPerformances_returnsMappedList() {
-        when(performanceRepository.findAll()).thenReturn(List.of(savedPerformance()));
+        when(performanceRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(savedPerformance())));
 
-        List<PerformanceResponseDTO> response = performanceService.getAllPerformances();
+        Page<PerformanceResponseDTO> response = performanceService.getAllPerformances(0, 20);
 
-        assertEquals(1, response.size());
-        assertEquals(100, response.getFirst().getId());
+        assertEquals(1, response.getContent().size());
+        assertEquals(100, response.getContent().getFirst().getId());
     }
 
     @Test
@@ -186,6 +195,30 @@ class PerformanceServiceTest {
     }
 
     @Test
+    void createPerformance_artistNotOnFestivalLineup_rejected() {
+        stubLookups();
+        festival.setArtists(new ArrayList<>());
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                () -> performanceService.createPerformance(validRequest()));
+
+        assertEquals("Performance artist must belong to the selected festival lineup", exception.getMessage());
+    }
+
+    @Test
+    void createPerformance_outsideFestivalDateRange_rejected() {
+        stubLookups();
+        PerformanceRequestDTO request = validRequest();
+        request.setStartsAt(LocalDateTime.of(2026, 7, 31, 23, 0));
+        request.setEndsAt(LocalDateTime.of(2026, 8, 1, 1, 0));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                () -> performanceService.createPerformance(request));
+
+        assertEquals("Scheduled performance must fall within the festival date range", exception.getMessage());
+    }
+
+    @Test
     void createPerformance_overlappingStage_rejected() {
         stubLookups();
         when(performanceRepository.existsByStage_IdAndStartsAtLessThanAndEndsAtGreaterThan(10, endsAt, startsAt)).thenReturn(true);
@@ -242,6 +275,58 @@ class PerformanceServiceTest {
         request.setEndsAt(null);
 
         assertThrows(InvalidRequestException.class, () -> performanceService.createPerformance(request));
+    }
+
+    @Test
+    void createPerformance_tbaWithoutStageOrTimes_isAllowed() {
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
+        when(performanceRepository.save(any(Performance.class))).thenAnswer(invocation -> {
+            Performance performance = invocation.getArgument(0);
+            ReflectionTestUtils.setField(performance, "id", 102);
+            return performance;
+        });
+
+        PerformanceRequestDTO request = new PerformanceRequestDTO();
+        request.setFestivalId(1);
+        request.setArtistId(20);
+        request.setScheduleStatus(ScheduleStatus.TBA);
+
+        PerformanceResponseDTO response = performanceService.createPerformance(request);
+
+        assertEquals(102, response.getId());
+        assertEquals(ScheduleStatus.TBA, response.getScheduleStatus());
+        assertEquals(null, response.getStageId());
+        verify(stageRepository, never()).findById(anyInt());
+        verify(performanceRepository).save(any(Performance.class));
+    }
+
+    @Test
+    void createPerformance_tbaWithTimes_doesNotParticipateInClashDetection() {
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
+        when(stageRepository.findById(10)).thenReturn(Optional.of(stage));
+        when(performanceRepository.save(any(Performance.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PerformanceRequestDTO request = validRequest();
+        request.setScheduleStatus(ScheduleStatus.TBA);
+
+        performanceService.createPerformance(request);
+
+        verify(performanceRepository, never()).existsByStage_IdAndStartsAtLessThanAndEndsAtGreaterThan(anyInt(), any(), any());
+        verify(performanceRepository, never()).existsByArtist_IdAndStartsAtLessThanAndEndsAtGreaterThan(anyInt(), any(), any());
+    }
+
+    @Test
+    void createPerformance_scheduledWithoutStage_rejected() {
+        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(artistRepository.findById(20)).thenReturn(Optional.of(artist));
+
+        PerformanceRequestDTO request = validRequest();
+        request.setStageId(null);
+
+        assertThrows(InvalidRequestException.class, () -> performanceService.createPerformance(request));
+        verify(performanceRepository, never()).save(any());
     }
 
     @Test

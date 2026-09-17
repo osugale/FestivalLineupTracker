@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -59,7 +60,7 @@ class PerformanceControllerTest {
 
     @Test
     void getPerformances_withoutJwt_returns200() throws Exception {
-        when(performanceService.getAllPerformances()).thenReturn(List.of());
+        when(performanceService.getAllPerformances(anyInt(), anyInt())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/performances")).andExpect(status().isOk());
     }

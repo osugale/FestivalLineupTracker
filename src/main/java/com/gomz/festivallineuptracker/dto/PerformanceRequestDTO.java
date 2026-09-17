@@ -16,7 +16,6 @@ public class PerformanceRequestDTO {
     @Min(value = 1, message = "Artist id must be a positive number")
     private Integer artistId;
 
-    @NotNull(message = "Stage id is required")
     @Min(value = 1, message = "Stage id must be a positive number")
     private Integer stageId;
 

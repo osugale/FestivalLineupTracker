@@ -40,7 +40,10 @@ class FestivalControllerTest {
               "name": "Boom Festival",
               "city": "Idanha",
               "country": "Portugal",
-              "venue": "Idanha-a-Nova"
+              "venue": "Idanha-a-Nova",
+              "startDate": "2026-07-18",
+              "endDate": "2026-07-25",
+              "timezone": "Europe/Lisbon"
             }
             """;
 
@@ -112,7 +115,29 @@ class FestivalControllerTest {
 
         mockMvc.perform(post("/festivals").contentType(MediaType.APPLICATION_JSON).content(invalidJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.name").exists());
+                .andExpect(jsonPath("$.name").exists())
+                .andExpect(jsonPath("$.startDate").exists())
+                .andExpect(jsonPath("$.endDate").exists())
+                .andExpect(jsonPath("$.timezone").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createFestival_endBeforeStart_returns400() throws Exception {
+        String invalidJson = """
+                {
+                  "name": "Boom Festival",
+                  "city": "Idanha",
+                  "country": "Portugal",
+                  "venue": "Idanha-a-Nova",
+                  "startDate": "2026-07-25",
+                  "endDate": "2026-07-18",
+                  "timezone": "Europe/Lisbon"
+                }
+                """;
+
+        mockMvc.perform(post("/festivals").contentType(MediaType.APPLICATION_JSON).content(invalidJson))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -154,7 +179,7 @@ class FestivalControllerTest {
     @Test
     void getArtistsOfFestival_returnsList() throws Exception {
         when(festivalService.getArtistsOfFestival(1)).thenReturn(List.of(
-                new ArtistResponseDTO("Four Tet", "Electronic", "UK", null, null, null, null, null, null, 20)
+                new ArtistResponseDTO(20, "Four Tet", "four-tet", "UK", null, null, null, null, null, null, List.of())
         ));
 
         mockMvc.perform(get("/festivals/1/artists"))
@@ -202,6 +227,7 @@ class FestivalControllerTest {
 
     private FestivalResponseDTO sampleFestival() {
         return new FestivalResponseDTO(1, "Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
-                null, null, null, null, null, "Electronic");
+                java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 25), "Europe/Lisbon",
+                null, null, null, null, List.of());
     }
 }
