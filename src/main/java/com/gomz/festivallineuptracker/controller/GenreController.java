@@ -110,14 +110,6 @@ public class GenreController {
 
 
 
-
-//    @PostMapping("/genres/{id}/relations")
-//    @PreAuthorize("hasRole('ADMIN')")
-//    @Operation(summary = "Create a parent-to-child genre taxonomy relation")
-//    public ResponseEntity<GenreRelationResponseDTO> createRelation(@PathVariable("id") int parentGenreId, @Valid @RequestBody GenreRelationRequestDTO request) {
-//        return ResponseEntity.status(201).body(genreService.createRelation(parentGenreId, request));
-//    }
-
     @PostMapping("/genres/{parentGenreId}/relations/{childGenreId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a parent-to-child genre taxonomy relation")

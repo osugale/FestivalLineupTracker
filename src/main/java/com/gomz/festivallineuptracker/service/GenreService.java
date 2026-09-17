@@ -112,25 +112,6 @@ public class GenreService {
 
 
 
-//    public GenreRelationResponseDTO createRelation(int parentGenreId, GenreRelationRequestDTO request) {
-//        Genre parent = findGenre(parentGenreId);
-//        Genre child = findGenre(request.getChildGenreId());
-//
-//        if (parent.getId() == child.getId()) {
-//            throw new InvalidRequestException("A genre cannot be its own child");
-//        }
-//        if (genreRelationRepository.existsByParentGenre_IdAndChildGenre_Id(parent.getId(), child.getId())) {
-//            throw new DuplicateResourceException("Genre taxonomy relation already exists");
-//        }
-//        if (hasPathFromChildToParent(child.getId(), parent.getId())) {
-//            throw new InvalidRequestException("Genre taxonomy cannot contain cycles");
-//        }
-//
-//        GenreRelation relation = new GenreRelation(parent, child);
-//        return ResponseMapper.toGenreRelationResponse(genreRelationRepository.save(relation));
-//    }
-
-
     public GenreRelationResponseDTO createRelation(int parentGenreId, int childGenreId) {
         Genre parent = findGenre(parentGenreId);
         Genre child = findGenre(childGenreId);
