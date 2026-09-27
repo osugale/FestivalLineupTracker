@@ -215,7 +215,6 @@ public class FestivalService {
         festival.setDescription(dto.getDescription());
         festival.setImageUrl(dto.getImageUrl());
         festival.setOfficialWebsite(dto.getOfficialWebsite());
-        festival.setTimetableUrl(dto.getTimetableUrl());
     }
 
 

@@ -73,7 +73,7 @@ public final class ResponseMapper {
 
     public static FestivalResponseDTO toFestivalResponse(Festival festival) {
         return new FestivalResponseDTO(festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(),
-                festival.getEndDate(), festival.getTimezone(), festival.getDescription(), festival.getImageUrl(), festival.getOfficialWebsite(), festival.getTimetableUrl(),
+                festival.getEndDate(), festival.getTimezone(), festival.getDescription(), festival.getImageUrl(), festival.getOfficialWebsite(),
                 toGenreResponses(festival.getGenres()));
     }
 }

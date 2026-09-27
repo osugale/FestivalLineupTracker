@@ -228,6 +228,6 @@ class FestivalControllerTest {
     private FestivalResponseDTO sampleFestival() {
         return new FestivalResponseDTO(1, "Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
                 java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 25), "Europe/Lisbon",
-                null, null, null, null, List.of());
+                null, null, null, List.of());
     }
 }

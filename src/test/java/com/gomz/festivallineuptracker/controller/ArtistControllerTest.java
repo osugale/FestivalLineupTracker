@@ -155,7 +155,7 @@ class ArtistControllerTest {
         when(artistService.getFestivalsOfArtist(1)).thenReturn(List.of(
                 new FestivalResponseDTO(8, "Boom Festival", "Idanha", "Portugal", "Idanha-a-Nova",
                         java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 25), "Europe/Lisbon",
-                        null, null, null, null, List.of())
+                        null, null, null, List.of())
         ));
 
         mockMvc.perform(get("/artists/1/festivals"))

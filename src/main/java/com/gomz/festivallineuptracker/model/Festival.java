@@ -2,7 +2,6 @@ package com.gomz.festivallineuptracker.model;
 
 
 import jakarta.persistence.*;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -69,8 +68,6 @@ public class Festival {
     @Column(length = 500)
     private String officialWebsite;
 
-    @Column(length = 500)
-    private String timetableUrl;
 
 
     public Festival(){}
@@ -117,7 +114,6 @@ public class Festival {
     public String getDescription() {return description;}
     public String getImageUrl() {return imageUrl;}
     public String getOfficialWebsite() {return officialWebsite;}
-    public String getTimetableUrl() {return timetableUrl;}
 
 
 
@@ -129,7 +125,6 @@ public class Festival {
     public void setTimezone(String timezone) {this.timezone = timezone;}
     public void setImageUrl(String imageUrl) {this.imageUrl = imageUrl;}
     public void setOfficialWebsite(String festivalOfficialWebsite) {this.officialWebsite = festivalOfficialWebsite;}
-    public void setTimetableUrl(String timetableUrl) {this.timetableUrl = timetableUrl;}
     public void setStartDate(LocalDate startDate) {this.startDate = startDate;}
     public void setVenue(String venue) {this.venue = venue;}
 

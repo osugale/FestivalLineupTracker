@@ -17,7 +17,6 @@ public class FestivalResponseDTO {
     private String description;
     private String imageUrl;
     private String officialWebsite;
-    private String timetableUrl;
     private List<GenreResponseDTO> genres = new ArrayList<>();
 
 
@@ -34,7 +33,7 @@ public class FestivalResponseDTO {
     }
 
     public FestivalResponseDTO(int id,String name, String city,String country,String venue, LocalDate startDate, LocalDate endDate,
-                              String timezone, String description, String imageUrl, String officialWebsite, String timetableUrl,
+                              String timezone, String description, String imageUrl, String officialWebsite,
                               List<GenreResponseDTO> genres) {
         this.id=id;
         this.name = name;
@@ -47,7 +46,6 @@ public class FestivalResponseDTO {
         this.description = description;
         this.imageUrl = imageUrl;
         this.officialWebsite = officialWebsite;
-        this.timetableUrl = timetableUrl;
         this.genres = genres == null ? new ArrayList<>() : genres;
     }
 
@@ -63,7 +61,6 @@ public class FestivalResponseDTO {
     public String getDescription() {return description;}
     public String getImageUrl() {return imageUrl;}
     public String getOfficialWebsite() {return officialWebsite;}
-    public String getTimetableUrl() {return timetableUrl;}
     public List<GenreResponseDTO> getGenres() {return genres;}
 
 
@@ -76,7 +73,6 @@ public class FestivalResponseDTO {
     public void setTimezone(String timezone) {this.timezone = timezone;}
     public void setImageUrl(String imageUrl) {this.imageUrl = imageUrl;}
     public void setOfficialWebsite(String festivalOfficialWebsite) {this.officialWebsite = festivalOfficialWebsite;}
-    public void setTimetableUrl(String timetableUrl) {this.timetableUrl = timetableUrl;}
     public void setStartDate(LocalDate startDate) {this.startDate = startDate;}
     public void setVenue(String venue) {this.venue = venue;}
     public void setGenres(List<GenreResponseDTO> genres) {

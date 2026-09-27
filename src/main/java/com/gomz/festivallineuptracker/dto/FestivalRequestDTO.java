@@ -32,7 +32,6 @@ public class FestivalRequestDTO {
 
     private String imageUrl;
     private String officialWebsite;
-    private String timetableUrl;
 
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
@@ -67,7 +66,6 @@ public class FestivalRequestDTO {
     public String getDescription() {return description;}
     public String getImageUrl() {return imageUrl;}
     public String getOfficialWebsite() {return officialWebsite;}
-    public String getTimetableUrl() {return timetableUrl;}
     public List<Integer> getGenreIds() {return genreIds;}
 
     @AssertTrue(message = "endDate must be on or after startDate")
@@ -87,7 +85,6 @@ public class FestivalRequestDTO {
     public void setTimezone(String timezone) {this.timezone = timezone;}
     public void setImageUrl(String imageUrl) {this.imageUrl = imageUrl;}
     public void setOfficialWebsite(String festivalOfficialWebsite) {this.officialWebsite = festivalOfficialWebsite;}
-    public void setTimetableUrl(String timetableUrl) {this.timetableUrl = timetableUrl;}
     public void setStartDate(LocalDate startDate) {this.startDate = startDate;}
     public void setVenue(String venue) {this.venue = venue;}
     public void setGenreIds(List<Integer> genreIds) {

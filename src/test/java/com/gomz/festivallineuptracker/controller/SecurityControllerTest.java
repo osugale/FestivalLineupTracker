@@ -154,7 +154,7 @@ class SecurityControllerTest {
         when(festivalService.addFestival(any())).thenReturn(
                 new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque",
                         java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 19), "Europe/Lisbon",
-                        null, null, null, null, List.of())
+                        null, null, null, List.of())
         );
 
         mockMvc.perform(post("/festivals").contentType(MediaType.APPLICATION_JSON).content(FESTIVAL_JSON)).andExpect(status().isCreated());
@@ -233,7 +233,7 @@ class SecurityControllerTest {
         when(festivalService.updateFestival(anyInt(), any())).thenReturn(
                 new FestivalResponseDTO(1, "Test Festival", "Lisbon", "Portugal", "Parque",
                         java.time.LocalDate.of(2026, 7, 18), java.time.LocalDate.of(2026, 7, 19), "Europe/Lisbon",
-                        null, null, null, null, List.of())
+                        null, null, null, List.of())
         );
 
         mockMvc.perform(put("/festivals/1").contentType(MediaType.APPLICATION_JSON).content(FESTIVAL_JSON))
