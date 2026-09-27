@@ -32,9 +32,11 @@ build/
 ### VS Code ###
 .vscode/
 
-
-
 ### docker ###
 .env
 .env.*
 !.env.example
+
+## Data ##
+/data/
+festival_tracker.sql
