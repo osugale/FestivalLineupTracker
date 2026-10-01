@@ -38,7 +38,11 @@ public class GenreController {
     public ResponseEntity<List<GenreResponseDTO>> getGenres() {return ResponseEntity.ok(genreService.getGenres());    }
 
 
-
+    @GetMapping("/genres/parents")
+    @Operation(summary = "Get parent genres")
+    public ResponseEntity<List<GenreResponseDTO>> getParentGenres() {
+        return ResponseEntity.ok(genreService.getParentGenres());
+    }
 
 
     @GetMapping("/genres/{id}")
