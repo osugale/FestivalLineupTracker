@@ -28,6 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,7 +71,7 @@ class PerformanceServiceTest {
         festival.setName("Boom Festival");
         festival.setStartDate(LocalDate.of(2026, 8, 1));
         festival.setEndDate(LocalDate.of(2026, 8, 2));
-        festival.setArtists(new ArrayList<>());
+        festival.setArtists(new HashSet<>());
 
         stage = new Stage(festival, "Main Stage");
         ReflectionTestUtils.setField(stage, "id", 10);
@@ -197,7 +198,7 @@ class PerformanceServiceTest {
     @Test
     void createPerformance_artistNotOnFestivalLineup_rejected() {
         stubLookups();
-        festival.setArtists(new ArrayList<>());
+        festival.setArtists(new HashSet<>());
 
         InvalidRequestException exception = assertThrows(InvalidRequestException.class,
                 () -> performanceService.createPerformance(validRequest()));

@@ -11,6 +11,7 @@ import com.gomz.festivallineuptracker.service.GenreService;
 import com.gomz.festivallineuptracker.service.JwtService;
 import com.gomz.festivallineuptracker.service.PerformanceService;
 import com.gomz.festivallineuptracker.service.StageService;
+import com.gomz.festivallineuptracker.service.UserPreferenceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ArtistController.class, FestivalController.class, StageController.class, PerformanceController.class, GenreController.class})
+@WebMvcTest(controllers = {ArtistController.class, FestivalController.class, StageController.class, PerformanceController.class, GenreController.class, UserPreferenceController.class})
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 
 class SecurityControllerTest {
@@ -82,6 +83,9 @@ class SecurityControllerTest {
 
     @MockitoBean
     private GenreService genreService;
+
+    @MockitoBean
+    private UserPreferenceService userPreferenceService;
 
     @MockitoBean
     private PerformanceService performanceService;
@@ -334,6 +338,19 @@ class SecurityControllerTest {
         when(genreService.getGenres()).thenReturn(List.of());
 
         mockMvc.perform(get("/genres")).andExpect(status().isOk());
+    }
+
+    @Test
+    void getMeGenrePreferences_withoutJwt_returns401() throws Exception {
+        mockMvc.perform(get("/me/genre-preferences")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getMeGenrePreferences_withUserRole_returns200() throws Exception {
+        when(userPreferenceService.getGenrePreferences()).thenReturn(List.of());
+
+        mockMvc.perform(get("/me/genre-preferences")).andExpect(status().isOk());
     }
 
     @Test

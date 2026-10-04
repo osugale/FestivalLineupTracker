@@ -18,8 +18,8 @@ public class FestivalResponseDTO {
     private String imageUrl;
     private String officialWebsite;
     private List<GenreResponseDTO> genres = new ArrayList<>();
-
-
+    private Integer festivalFit;
+    private Boolean hasFavoriteArtist;
 
     public FestivalResponseDTO() {
     }
@@ -62,6 +62,8 @@ public class FestivalResponseDTO {
     public String getImageUrl() {return imageUrl;}
     public String getOfficialWebsite() {return officialWebsite;}
     public List<GenreResponseDTO> getGenres() {return genres;}
+    public Integer getFestivalFit() {return festivalFit;}
+    public Boolean getHasFavoriteArtist() {return hasFavoriteArtist;}
 
 
     public void setId(int id) {this.id = id;}
@@ -77,6 +79,14 @@ public class FestivalResponseDTO {
     public void setVenue(String venue) {this.venue = venue;}
     public void setGenres(List<GenreResponseDTO> genres) {
         this.genres = genres == null ? new ArrayList<>() : genres;
+    }
+
+    public void setFestivalFit(Integer festivalFit) {
+        this.festivalFit = festivalFit;
+    }
+
+    public void setHasFavoriteArtist(Boolean hasFavoriteArtist) {
+        this.hasFavoriteArtist = hasFavoriteArtist;
     }
 
 }

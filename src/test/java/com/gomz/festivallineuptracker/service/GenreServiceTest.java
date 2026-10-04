@@ -168,6 +168,15 @@ class GenreServiceTest {
         verify(genreRepository).deleteById(1);
     }
 
+    @Test
+    void getParentGenres_returnsRootGenresSortedByName() {
+        when(genreRepository.findRootGenres()).thenReturn(List.of(jungle, drumAndBass));
+
+        List<GenreResponseDTO> result = genreService.getParentGenres();
+
+        assertEquals(List.of("Drum & Bass", "Jungle"), result.stream().map(GenreResponseDTO::getName).toList());
+    }
+
     private Genre genre(int id, String name, String slug) {
         Genre genre = new Genre(name, slug);
         ReflectionTestUtils.setField(genre, "id", id);

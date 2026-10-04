@@ -72,8 +72,15 @@ public final class ResponseMapper {
 
 
     public static FestivalResponseDTO toFestivalResponse(Festival festival) {
-        return new FestivalResponseDTO(festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(),
+        return toFestivalResponse(festival, null, null);
+    }
+
+    public static FestivalResponseDTO toFestivalResponse(Festival festival, Integer festivalFit, Boolean hasFavoriteArtist) {
+        FestivalResponseDTO dto = new FestivalResponseDTO(festival.getId(), festival.getName(), festival.getCity(), festival.getCountry(), festival.getVenue(), festival.getStartDate(),
                 festival.getEndDate(), festival.getTimezone(), festival.getDescription(), festival.getImageUrl(), festival.getOfficialWebsite(),
                 toGenreResponses(festival.getGenres()));
+        dto.setFestivalFit(festivalFit);
+        dto.setHasFavoriteArtist(hasFavoriteArtist);
+        return dto;
     }
 }

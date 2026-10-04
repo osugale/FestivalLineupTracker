@@ -3,9 +3,8 @@ package com.gomz.festivallineuptracker.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -18,7 +17,7 @@ public class Festival {
     @ManyToMany
     @JoinTable(name = "festival_artist", joinColumns = @JoinColumn(name = "festival_id"), inverseJoinColumns = @JoinColumn(name = "artist_id"),
             uniqueConstraints = @UniqueConstraint(name = "uk_festival_artist_pair", columnNames = {"festival_id", "artist_id"}))
-    private List<Artist> artists = new ArrayList<>();
+    private Set<Artist> artists = new HashSet<>();
 
 
 
@@ -86,12 +85,12 @@ public class Festival {
         this.timezone = timezone;
     }
 
-    public List<Artist> getArtists() {
+    public Set<Artist> getArtists() {
         return artists;
     }
 
-    public void setArtists(List<Artist> artists) {
-        this.artists = artists;
+    public void setArtists(Set<Artist> artists) {
+        this.artists = artists == null ? new HashSet<>() : artists;
     }
 
     public Set<Genre> getGenres() {

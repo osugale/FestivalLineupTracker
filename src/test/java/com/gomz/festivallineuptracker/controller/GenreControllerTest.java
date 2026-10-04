@@ -57,6 +57,15 @@ class GenreControllerTest {
     }
 
     @Test
+    void getParentGenres_withoutJwt_returns200() throws Exception {
+        when(genreService.getParentGenres()).thenReturn(List.of(new GenreResponseDTO(1, "Electronic", "electronic")));
+
+        mockMvc.perform(get("/genres/parents"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Electronic"));
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     void createGenre_validRequest_returns201() throws Exception {
         when(genreService.createGenre(any())).thenReturn(new GenreResponseDTO(1, "Techno", "techno"));
