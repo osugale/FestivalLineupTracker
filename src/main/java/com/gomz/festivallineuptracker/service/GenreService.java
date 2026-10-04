@@ -48,6 +48,17 @@ public class GenreService {
 
 
 
+    public List<GenreResponseDTO> getParentGenres() {
+        return genreRepository.findRootGenres().stream()
+                .map(ResponseMapper::toGenreResponse)
+                .sorted(java.util.Comparator.comparing(GenreResponseDTO::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+
+
+
+
     public GenreResponseDTO getGenreById(int id) {
         return ResponseMapper.toGenreResponse(findGenre(id));
     }
