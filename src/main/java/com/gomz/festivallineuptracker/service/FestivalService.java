@@ -167,6 +167,18 @@ public class FestivalService {
         return true;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
     private Festival findFestival(int id) {
         return festivalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Festival with id " + id + " not found"));
