@@ -3,6 +3,7 @@ package com.gomz.festivallineuptracker.controller;
 import com.gomz.festivallineuptracker.config.SecurityConfig;
 import com.gomz.festivallineuptracker.dto.ArtistResponseDTO;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.security.JwtAuthenticationFilter;
 import com.gomz.festivallineuptracker.service.ArtistService;
@@ -148,6 +149,17 @@ class ArtistControllerTest {
         when(artistService.deleteArtist(99)).thenReturn(false);
 
         mockMvc.perform(delete("/artists/99")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteArtist_referenced_returns409() throws Exception {
+        when(artistService.deleteArtist(1))
+                .thenThrow(new ResourceInUseException("Artist is referenced by a performance and cannot be deleted"));
+
+        mockMvc.perform(delete("/artists/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Artist is referenced by a performance and cannot be deleted"));
     }
 
     @Test

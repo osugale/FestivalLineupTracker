@@ -3,6 +3,7 @@ package com.gomz.festivallineuptracker.controller;
 import com.gomz.festivallineuptracker.config.SecurityConfig;
 import com.gomz.festivallineuptracker.dto.StageResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.security.JwtAuthenticationFilter;
 import com.gomz.festivallineuptracker.service.JwtService;
@@ -173,6 +174,17 @@ class StageControllerTest {
         mockMvc.perform(delete("/admin/stages/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteStage_referenced_returns409() throws Exception {
+        doThrow(new ResourceInUseException("Stage is referenced by a performance and cannot be deleted"))
+                .when(stageService).deleteStage(10);
+
+        mockMvc.perform(delete("/admin/stages/10"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Stage is referenced by a performance and cannot be deleted"));
     }
 
     private StageResponseDTO sampleStage() {

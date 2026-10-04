@@ -13,6 +13,10 @@ public interface GenreRelationRepository extends JpaRepository<GenreRelation, In
 
     List<GenreRelation> findByChildGenre_Id(int childGenreId);
 
+    boolean existsByParentGenre_Id(int parentGenreId);
+
+    boolean existsByChildGenre_Id(int childGenreId);
+
     void deleteByParentGenre_Id(int parentGenreId);
 
     void deleteByChildGenre_Id(int childGenreId);

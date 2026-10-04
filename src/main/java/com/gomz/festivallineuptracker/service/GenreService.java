@@ -7,11 +7,15 @@ import com.gomz.festivallineuptracker.dto.GenreRequestDTO;
 import com.gomz.festivallineuptracker.dto.GenreResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.model.GenreRelation;
+import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRelationRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.UserGenrePreferenceRepository;
 import com.gomz.festivallineuptracker.util.SlugNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,10 +31,18 @@ public class GenreService {
 
     private final GenreRepository genreRepository;
     private final GenreRelationRepository genreRelationRepository;
+    private final ArtistRepository artistRepository;
+    private final FestivalRepository festivalRepository;
+    private final UserGenrePreferenceRepository userGenrePreferenceRepository;
 
-    public GenreService(GenreRepository genreRepository, GenreRelationRepository genreRelationRepository) {
+    public GenreService(GenreRepository genreRepository, GenreRelationRepository genreRelationRepository,
+                        ArtistRepository artistRepository, FestivalRepository festivalRepository,
+                        UserGenrePreferenceRepository userGenrePreferenceRepository) {
         this.genreRepository = genreRepository;
         this.genreRelationRepository = genreRelationRepository;
+        this.artistRepository = artistRepository;
+        this.festivalRepository = festivalRepository;
+        this.userGenrePreferenceRepository = userGenrePreferenceRepository;
     }
 
 
@@ -49,9 +61,8 @@ public class GenreService {
 
 
     public List<GenreResponseDTO> getParentGenres() {
-        return genreRepository.findRootGenres().stream()
+        return genreRepository.findParentGenres().stream()
                 .map(ResponseMapper::toGenreResponse)
-                .sorted(java.util.Comparator.comparing(GenreResponseDTO::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -102,8 +113,18 @@ public class GenreService {
         if (!genreRepository.existsById(id)) {
             throw new ResourceNotFoundException("Genre with id " + id + " not found");
         }
-        genreRelationRepository.deleteByParentGenre_Id(id);
-        genreRelationRepository.deleteByChildGenre_Id(id);
+        if (genreRelationRepository.existsByParentGenre_Id(id) || genreRelationRepository.existsByChildGenre_Id(id)) {
+            throw new ResourceInUseException("Genre is referenced by a taxonomy relation and cannot be deleted");
+        }
+        if (artistRepository.existsByGenres_Id(id)) {
+            throw new ResourceInUseException("Genre is referenced by an artist and cannot be deleted");
+        }
+        if (festivalRepository.existsByGenres_Id(id)) {
+            throw new ResourceInUseException("Genre is referenced by a festival and cannot be deleted");
+        }
+        if (userGenrePreferenceRepository.existsByGenreId(id)) {
+            throw new ResourceInUseException("Genre is referenced by user preferences and cannot be deleted");
+        }
         genreRepository.deleteById(id);
     }
 

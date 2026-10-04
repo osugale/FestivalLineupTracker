@@ -14,4 +14,6 @@ public interface StageRepository extends JpaRepository<Stage, Integer> {
     boolean existsByFestival_IdAndNameAndIdNot(int festivalId, String name, int id);
 
     List<Stage> findByFestival_IdOrderByNameAsc(int festivalId);
+
+    boolean existsByFestival_Id(int festivalId);
 }

@@ -10,6 +10,8 @@ public interface UserArtistFavoriteRepository extends JpaRepository<UserArtistFa
 
     List<UserArtistFavorite> findByUserId(int userId);
 
+    boolean existsByArtistId(int artistId);
+
     @Modifying(clearAutomatically = true)
     void deleteByUserId(int userId);
 }

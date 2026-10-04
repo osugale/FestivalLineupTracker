@@ -4,6 +4,7 @@ import com.gomz.festivallineuptracker.dto.StageRequestDTO;
 import com.gomz.festivallineuptracker.dto.StageResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Festival;
 import com.gomz.festivallineuptracker.model.Stage;
@@ -149,6 +150,15 @@ class StageServiceTest {
         stageService.deleteStage(10);
 
         verify(stageRepository).deleteById(10);
+    }
+
+    @Test
+    void deleteStage_referencedByPerformance_throwsConflict() {
+        when(stageRepository.existsById(10)).thenReturn(true);
+        when(performanceRepository.existsByStage_Id(10)).thenReturn(true);
+
+        assertThrows(ResourceInUseException.class, () -> stageService.deleteStage(10));
+        verify(stageRepository, never()).deleteById(10);
     }
 
     @Test

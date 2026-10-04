@@ -5,6 +5,7 @@ import com.gomz.festivallineuptracker.dto.FestivalRequestDTO;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Festival;
@@ -17,6 +18,8 @@ import com.gomz.festivallineuptracker.repository.ArtistRepository;
 import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRelationRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.PerformanceRepository;
+import com.gomz.festivallineuptracker.repository.StageRepository;
 import com.gomz.festivallineuptracker.repository.UserArtistFavoriteRepository;
 import com.gomz.festivallineuptracker.repository.UserGenrePreferenceRepository;
 import com.gomz.festivallineuptracker.security.AppUserDetails;
@@ -69,6 +72,12 @@ class FestivalServiceTest {
     @Mock
     private UserArtistFavoriteRepository userArtistFavoriteRepository;
 
+    @Mock
+    private PerformanceRepository performanceRepository;
+
+    @Mock
+    private StageRepository stageRepository;
+
     @InjectMocks
     private FestivalService festivalService;
 
@@ -98,6 +107,7 @@ class FestivalServiceTest {
     @Test
     void getFestivals_returnsPage() {
         when(festivalRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(festival)));
+        when(festivalRepository.findWithGenresByIdIn(any())).thenReturn(List.of(festival));
 
         Page<FestivalResponseDTO> result = festivalService.getFestivals(0, 10);
 
@@ -218,7 +228,7 @@ class FestivalServiceTest {
     @Test
     void getArtistsOfFestival_returnsArtistDtos() {
         festival.getArtists().add(artist);
-        when(festivalRepository.findById(1)).thenReturn(Optional.of(festival));
+        when(festivalRepository.findWithArtistsById(1)).thenReturn(Optional.of(festival));
 
         List<ArtistResponseDTO> result = festivalService.getArtistsOfFestival(1);
 
@@ -228,7 +238,7 @@ class FestivalServiceTest {
 
     @Test
     void getArtistsOfFestival_missingFestival_throwsNotFound() {
-        when(festivalRepository.findById(99)).thenReturn(Optional.empty());
+        when(festivalRepository.findWithArtistsById(99)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> festivalService.getArtistsOfFestival(99));
     }
@@ -328,10 +338,19 @@ class FestivalServiceTest {
     }
 
     @Test
+    void deleteFestival_referencedByPerformance_throwsConflict() {
+        when(festivalRepository.existsById(1)).thenReturn(true);
+        when(performanceRepository.existsByFestival_Id(1)).thenReturn(true);
+
+        assertThrows(ResourceInUseException.class, () -> festivalService.deleteFestival(1));
+    }
+
+    @Test
     void getFestivals_authenticatedWithoutPreferences_usesUnpersonalizedPage() {
         authenticate(7);
         when(userGenrePreferenceRepository.findByUserId(7)).thenReturn(List.of());
         when(festivalRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(festival)));
+        when(festivalRepository.findWithGenresByIdIn(any())).thenReturn(List.of(festival));
 
         Page<FestivalResponseDTO> result = festivalService.getFestivals(0, 10);
 

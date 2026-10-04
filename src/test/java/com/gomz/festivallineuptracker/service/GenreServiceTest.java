@@ -5,11 +5,15 @@ import com.gomz.festivallineuptracker.dto.GenreRequestDTO;
 import com.gomz.festivallineuptracker.dto.GenreResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.model.GenreRelation;
+import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRelationRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.UserGenrePreferenceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +28,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +37,9 @@ class GenreServiceTest {
 
     @Mock private GenreRepository genreRepository;
     @Mock private GenreRelationRepository genreRelationRepository;
+    @Mock private ArtistRepository artistRepository;
+    @Mock private FestivalRepository festivalRepository;
+    @Mock private UserGenrePreferenceRepository userGenrePreferenceRepository;
     @InjectMocks private GenreService genreService;
 
     private Genre drumAndBass;
@@ -158,19 +166,28 @@ class GenreServiceTest {
     }
 
     @Test
-    void deleteGenre_existing_removesTaxonomyRelationsFirst() {
+    void deleteGenre_unreferenced_deletes() {
         when(genreRepository.existsById(1)).thenReturn(true);
 
         genreService.deleteGenre(1);
 
-        verify(genreRelationRepository).deleteByParentGenre_Id(1);
-        verify(genreRelationRepository).deleteByChildGenre_Id(1);
         verify(genreRepository).deleteById(1);
+        verify(genreRelationRepository, never()).deleteByParentGenre_Id(1);
+        verify(genreRelationRepository, never()).deleteByChildGenre_Id(1);
     }
 
     @Test
-    void getParentGenres_returnsRootGenresSortedByName() {
-        when(genreRepository.findRootGenres()).thenReturn(List.of(jungle, drumAndBass));
+    void deleteGenre_referencedByRelation_throwsConflict() {
+        when(genreRepository.existsById(1)).thenReturn(true);
+        when(genreRelationRepository.existsByParentGenre_Id(1)).thenReturn(true);
+
+        assertThrows(ResourceInUseException.class, () -> genreService.deleteGenre(1));
+        verify(genreRepository, never()).deleteById(1);
+    }
+
+    @Test
+    void getParentGenres_returnsTrueParentsSortedByName() {
+        when(genreRepository.findParentGenres()).thenReturn(List.of(drumAndBass, jungle));
 
         List<GenreResponseDTO> result = genreService.getParentGenres();
 

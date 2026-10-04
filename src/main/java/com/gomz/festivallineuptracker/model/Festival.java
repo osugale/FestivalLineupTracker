@@ -16,7 +16,8 @@ public class Festival {
 
     @ManyToMany
     @JoinTable(name = "festival_artist", joinColumns = @JoinColumn(name = "festival_id"), inverseJoinColumns = @JoinColumn(name = "artist_id"),
-            uniqueConstraints = @UniqueConstraint(name = "uk_festival_artist_pair", columnNames = {"festival_id", "artist_id"}))
+            uniqueConstraints = @UniqueConstraint(name = "uk_festival_artist_pair", columnNames = {"festival_id", "artist_id"}),
+            indexes = @Index(name = "idx_festival_artist_artist_festival", columnList = "artist_id, festival_id"))
     private Set<Artist> artists = new HashSet<>();
 
 

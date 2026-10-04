@@ -27,7 +27,8 @@ public class Artist {
 
 
     @ManyToMany
-    @JoinTable(name = "artist_genre", joinColumns = @JoinColumn(name = "artist_id"), inverseJoinColumns = @JoinColumn(name = "genre_id"))
+    @JoinTable(name = "artist_genre", joinColumns = @JoinColumn(name = "artist_id"), inverseJoinColumns = @JoinColumn(name = "genre_id"),
+            indexes = @Index(name = "idx_artist_genre_genre_artist", columnList = "genre_id, artist_id"))
     private Set<Genre> genres = new LinkedHashSet<>();
 
 

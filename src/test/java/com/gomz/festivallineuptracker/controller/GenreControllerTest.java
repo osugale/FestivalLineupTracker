@@ -4,6 +4,7 @@ import com.gomz.festivallineuptracker.config.SecurityConfig;
 import com.gomz.festivallineuptracker.dto.GenreRelationResponseDTO;
 import com.gomz.festivallineuptracker.dto.GenreResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.security.JwtAuthenticationFilter;
 import com.gomz.festivallineuptracker.service.GenreService;
 import com.gomz.festivallineuptracker.service.JwtService;
@@ -22,6 +23,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -108,5 +110,16 @@ class GenreControllerTest {
     @WithMockUser(roles = "ADMIN")
     void deleteRelation_returns204() throws Exception {
         mockMvc.perform(delete("/genre-relations/9")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteGenre_referenced_returns409() throws Exception {
+        doThrow(new ResourceInUseException("Genre is referenced by a taxonomy relation and cannot be deleted"))
+                .when(genreService).deleteGenre(1);
+
+        mockMvc.perform(delete("/genres/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Genre is referenced by a taxonomy relation and cannot be deleted"));
     }
 }

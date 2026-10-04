@@ -46,6 +46,14 @@ public class GlobalExceptionHandler {
         return error;
     }
 
+    @ExceptionHandler(ResourceInUseException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleResourceInUseException(ResourceInUseException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return error;
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, String> handleInvalidCredentialsException(InvalidCredentialsException ex) {

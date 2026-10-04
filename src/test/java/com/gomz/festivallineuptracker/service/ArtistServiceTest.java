@@ -4,12 +4,16 @@ import com.gomz.festivallineuptracker.dto.ArtistRequestDTO;
 import com.gomz.festivallineuptracker.dto.ArtistResponseDTO;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Festival;
 import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.PerformanceRepository;
+import com.gomz.festivallineuptracker.repository.UserArtistFavoriteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +49,15 @@ class ArtistServiceTest {
 
     @Mock
     private GenreRepository genreRepository;
+
+    @Mock
+    private PerformanceRepository performanceRepository;
+
+    @Mock
+    private FestivalRepository festivalRepository;
+
+    @Mock
+    private UserArtistFavoriteRepository userArtistFavoriteRepository;
 
     @InjectMocks
     private ArtistService artistService;
@@ -63,6 +77,7 @@ class ArtistServiceTest {
     @Test
     void getArtists_returnsPage() {
         when(artistRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(artist)));
+        when(artistRepository.findWithGenresByIdIn(any())).thenReturn(List.of(artist));
 
         Page<ArtistResponseDTO> result = artistService.getArtists(0, 10, "name");
 
@@ -182,7 +197,7 @@ class ArtistServiceTest {
         festival.setEndDate(LocalDate.of(2026, 7, 25));
         festival.setTimezone("Europe/Lisbon");
         artist.setFestivals(List.of(festival));
-        when(artistRepository.findById(1)).thenReturn(Optional.of(artist));
+        when(artistRepository.findWithFestivalsById(1)).thenReturn(Optional.of(artist));
 
         List<FestivalResponseDTO> result = artistService.getFestivalsOfArtist(1);
 
@@ -192,7 +207,7 @@ class ArtistServiceTest {
 
     @Test
     void getFestivalsOfArtist_missingArtist_throwsNotFound() {
-        when(artistRepository.findById(99)).thenReturn(Optional.empty());
+        when(artistRepository.findWithFestivalsById(99)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> artistService.getFestivalsOfArtist(99));
     }
@@ -203,6 +218,15 @@ class ArtistServiceTest {
 
         assertTrue(artistService.deleteArtist(1));
         verify(artistRepository).deleteById(1);
+    }
+
+    @Test
+    void deleteArtist_referencedByPerformance_throwsConflict() {
+        when(artistRepository.existsById(1)).thenReturn(true);
+        when(performanceRepository.existsByArtist_Id(1)).thenReturn(true);
+
+        assertThrows(ResourceInUseException.class, () -> artistService.deleteArtist(1));
+        verify(artistRepository, never()).deleteById(1);
     }
 
     @Test

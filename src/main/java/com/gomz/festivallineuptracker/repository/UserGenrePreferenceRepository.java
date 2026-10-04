@@ -10,6 +10,8 @@ public interface UserGenrePreferenceRepository extends JpaRepository<UserGenrePr
 
     List<UserGenrePreference> findByUserId(int userId);
 
+    boolean existsByGenreId(int genreId);
+
     @Modifying(clearAutomatically = true)
     void deleteByUserId(int userId);
 }

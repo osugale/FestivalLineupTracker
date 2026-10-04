@@ -6,6 +6,7 @@ import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
 import com.gomz.festivallineuptracker.dto.ResponseMapper;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Festival;
@@ -17,6 +18,8 @@ import com.gomz.festivallineuptracker.repository.ArtistRepository;
 import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRelationRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.PerformanceRepository;
+import com.gomz.festivallineuptracker.repository.StageRepository;
 import com.gomz.festivallineuptracker.repository.UserArtistFavoriteRepository;
 import com.gomz.festivallineuptracker.repository.UserGenrePreferenceRepository;
 import com.gomz.festivallineuptracker.security.CurrentUser;
@@ -50,24 +53,29 @@ public class FestivalService {
     private final GenreRelationRepository genreRelationRepository;
     private final UserGenrePreferenceRepository userGenrePreferenceRepository;
     private final UserArtistFavoriteRepository userArtistFavoriteRepository;
+    private final PerformanceRepository performanceRepository;
+    private final StageRepository stageRepository;
 
     public FestivalService(FestivalRepository festivalRepository, ArtistRepository artistRepository,
                            GenreRepository genreRepository, GenreRelationRepository genreRelationRepository,
                            UserGenrePreferenceRepository userGenrePreferenceRepository,
-                           UserArtistFavoriteRepository userArtistFavoriteRepository) {
+                           UserArtistFavoriteRepository userArtistFavoriteRepository,
+                           PerformanceRepository performanceRepository, StageRepository stageRepository) {
         this.festivalRepository = festivalRepository;
         this.artistRepository = artistRepository;
         this.genreRepository = genreRepository;
         this.genreRelationRepository = genreRelationRepository;
         this.userGenrePreferenceRepository = userGenrePreferenceRepository;
         this.userArtistFavoriteRepository = userArtistFavoriteRepository;
+        this.performanceRepository = performanceRepository;
+        this.stageRepository = stageRepository;
     }
 
     public Page<FestivalResponseDTO> getFestivals(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         PersonalizationContext context = personalizationContext();
         if (context == null) {
-            return festivalRepository.findAll(pageable).map(ResponseMapper::toFestivalResponse);
+            return mapFestivalsWithGenres(festivalRepository.findAll(pageable));
         }
 
         List<Festival> allFestivals = new ArrayList<>(festivalRepository.findAll());
@@ -155,13 +163,23 @@ public class FestivalService {
     }
 
     public List<ArtistResponseDTO> getArtistsOfFestival(int festivalId) {
-        Festival festival = findFestival(festivalId);
+        Festival festival = festivalRepository.findWithArtistsById(festivalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Festival with id " + festivalId + " not found"));
         return festival.getArtists().stream().map(ResponseMapper::toArtistResponse).toList();
     }
 
     public boolean deleteFestival(int id) {
         if (!festivalRepository.existsById(id)) {
             return false;
+        }
+        if (performanceRepository.existsByFestival_Id(id)) {
+            throw new ResourceInUseException("Festival is referenced by a performance and cannot be deleted");
+        }
+        if (stageRepository.existsByFestival_Id(id)) {
+            throw new ResourceInUseException("Festival is referenced by a stage and cannot be deleted");
+        }
+        if (festivalRepository.existsByIdAndArtistsIsNotEmpty(id)) {
+            throw new ResourceInUseException("Festival is referenced by a lineup artist and cannot be deleted");
         }
         festivalRepository.deleteById(id);
         return true;
@@ -244,6 +262,17 @@ public class FestivalService {
             genres.add(genre);
         }
         return genres;
+    }
+
+    private Page<FestivalResponseDTO> mapFestivalsWithGenres(Page<Festival> page) {
+        List<Festival> content = page.getContent();
+        if (content.isEmpty()) {
+            return page.map(ResponseMapper::toFestivalResponse);
+        }
+        Map<Integer, Festival> withGenres = festivalRepository.findWithGenresByIdIn(content.stream().map(Festival::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(Festival::getId, Function.identity()));
+        return page.map(festival -> ResponseMapper.toFestivalResponse(withGenres.getOrDefault(festival.getId(), festival)));
     }
 
     private PersonalizationContext personalizationContext() {

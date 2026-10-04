@@ -21,4 +21,12 @@ public interface GenreRepository extends JpaRepository<Genre, Integer> {
 
     @Query("select g from Genre g where g.id not in (select r.childGenre.id from GenreRelation r)")
     List<Genre> findRootGenres();
+
+    @Query("""
+            select distinct parent from GenreRelation relation
+            join relation.parentGenre parent
+            where parent.id not in (select childRelation.childGenre.id from GenreRelation childRelation)
+            order by parent.name
+            """)
+    List<Genre> findParentGenres();
 }

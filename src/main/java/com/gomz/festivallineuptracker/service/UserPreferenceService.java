@@ -171,7 +171,7 @@ public class UserPreferenceService {
         if (artistIds.isEmpty()) {
             return List.of();
         }
-        return artistRepository.findAllById(artistIds).stream()
+        return artistRepository.findWithGenresByIdIn(artistIds).stream()
                 .map(ResponseMapper::toArtistResponse)
                 .sorted(Comparator.comparing(ArtistResponseDTO::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();

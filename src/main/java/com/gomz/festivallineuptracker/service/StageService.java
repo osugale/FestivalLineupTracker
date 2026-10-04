@@ -4,6 +4,7 @@ import com.gomz.festivallineuptracker.dto.StageRequestDTO;
 import com.gomz.festivallineuptracker.dto.StageResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Festival;
 import com.gomz.festivallineuptracker.model.Stage;
@@ -126,7 +127,9 @@ public class StageService {
         if (!stageRepository.existsById(id)) {
             throw new ResourceNotFoundException("Stage with id " + id + " not found");
         }
-
+        if (performanceRepository.existsByStage_Id(id)) {
+            throw new ResourceInUseException("Stage is referenced by a performance and cannot be deleted");
+        }
         stageRepository.deleteById(id);
     }
 

@@ -6,11 +6,15 @@ import com.gomz.festivallineuptracker.dto.ResponseMapper;
 import com.gomz.festivallineuptracker.dto.FestivalResponseDTO;
 import com.gomz.festivallineuptracker.exception.DuplicateResourceException;
 import com.gomz.festivallineuptracker.exception.InvalidRequestException;
+import com.gomz.festivallineuptracker.exception.ResourceInUseException;
 import com.gomz.festivallineuptracker.exception.ResourceNotFoundException;
 import com.gomz.festivallineuptracker.model.Artist;
 import com.gomz.festivallineuptracker.model.Genre;
 import com.gomz.festivallineuptracker.repository.ArtistRepository;
+import com.gomz.festivallineuptracker.repository.FestivalRepository;
 import com.gomz.festivallineuptracker.repository.GenreRepository;
+import com.gomz.festivallineuptracker.repository.PerformanceRepository;
+import com.gomz.festivallineuptracker.repository.UserArtistFavoriteRepository;
 import com.gomz.festivallineuptracker.util.SlugNormalizer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -29,10 +36,18 @@ public class ArtistService {
 
     private final ArtistRepository artistRepository;
     private final GenreRepository genreRepository;
+    private final PerformanceRepository performanceRepository;
+    private final FestivalRepository festivalRepository;
+    private final UserArtistFavoriteRepository userArtistFavoriteRepository;
 
-    public ArtistService(ArtistRepository artistRepository, GenreRepository genreRepository) {
+    public ArtistService(ArtistRepository artistRepository, GenreRepository genreRepository,
+                         PerformanceRepository performanceRepository, FestivalRepository festivalRepository,
+                         UserArtistFavoriteRepository userArtistFavoriteRepository) {
         this.artistRepository = artistRepository;
         this.genreRepository = genreRepository;
+        this.performanceRepository = performanceRepository;
+        this.festivalRepository = festivalRepository;
+        this.userArtistFavoriteRepository = userArtistFavoriteRepository;
     }
 
 
@@ -40,7 +55,7 @@ public class ArtistService {
 
     public Page<ArtistResponseDTO> getArtists(int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-        return artistRepository.findAll(pageable).map(ResponseMapper::toArtistResponse);
+        return mapArtistsWithGenres(artistRepository.findAll(pageable));
     }
 
 
@@ -96,13 +111,23 @@ public class ArtistService {
 
 
     public List<FestivalResponseDTO> getFestivalsOfArtist(int artistId) {
-        Artist artist = findArtist(artistId);
+        Artist artist = artistRepository.findWithFestivalsById(artistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Artist with id " + artistId + " not found"));
         return artist.getFestivals().stream().map(ResponseMapper::toFestivalResponse).toList();
     }
 
     public boolean deleteArtist(int id) {
         if (!artistRepository.existsById(id)) {
             return false;
+        }
+        if (performanceRepository.existsByArtist_Id(id)) {
+            throw new ResourceInUseException("Artist is referenced by a performance and cannot be deleted");
+        }
+        if (festivalRepository.existsByArtists_Id(id)) {
+            throw new ResourceInUseException("Artist is referenced by a festival lineup and cannot be deleted");
+        }
+        if (userArtistFavoriteRepository.existsByArtistId(id)) {
+            throw new ResourceInUseException("Artist is referenced by user favorites and cannot be deleted");
         }
         artistRepository.deleteById(id);
         return true;
@@ -190,5 +215,16 @@ public class ArtistService {
             genres.add(genre);
         }
         return genres;
+    }
+
+    private Page<ArtistResponseDTO> mapArtistsWithGenres(Page<Artist> page) {
+        List<Artist> content = page.getContent();
+        if (content.isEmpty()) {
+            return page.map(ResponseMapper::toArtistResponse);
+        }
+        Map<Integer, Artist> withGenres = artistRepository.findWithGenresByIdIn(content.stream().map(Artist::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(Artist::getId, Function.identity()));
+        return page.map(artist -> ResponseMapper.toArtistResponse(withGenres.getOrDefault(artist.getId(), artist)));
     }
 }
