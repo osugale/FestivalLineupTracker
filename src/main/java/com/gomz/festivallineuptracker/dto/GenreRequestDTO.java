@@ -11,7 +11,6 @@ public class GenreRequestDTO {
 
     public GenreRequestDTO() {
     }
-
     public GenreRequestDTO(String name) {
         this.name = name;
     }
