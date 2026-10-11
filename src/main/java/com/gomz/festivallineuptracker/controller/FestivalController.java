@@ -42,7 +42,6 @@ public class FestivalController {
 
 
 
-
     @GetMapping("/{id}") @Operation(summary = "Get festivals by ID")
     public ResponseEntity<FestivalResponseDTO> getFestivalById(@PathVariable int id) {
 
