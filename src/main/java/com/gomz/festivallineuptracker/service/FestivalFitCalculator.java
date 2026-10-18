@@ -26,7 +26,8 @@ public final class FestivalFitCalculator {
         }
         for (Integer genreId : genreIds) {
             if (genreId != null) {
-                roots.add(resolveRoot(genreId, childToParent));
+                roots.add(resolveRoot(genreId,
+                        childToParent));
             }
         }
         return roots;
