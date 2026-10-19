@@ -272,7 +272,7 @@ public class UserPreferenceService {
     }
 
     private Set<Integer> rootGenreIds() {
-        return genreRepository.findRootGenres().stream().map(Genre::getId).collect(Collectors.toSet());
+        return genreRepository.findParentGenres().stream().map(Genre::getId).collect(Collectors.toSet());
     }
 
     private void assertNoDuplicates(List<Integer> ids, String fieldName) {
