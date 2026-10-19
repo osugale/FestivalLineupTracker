@@ -99,7 +99,7 @@ class UserPreferenceServiceTest {
     void replaceGenrePreferences_rejectsChildGenres() {
         Genre parent = genre(1, "Electronic");
         Genre child = genre(9, "Techno");
-        when(genreRepository.findRootGenres()).thenReturn(List.of(parent));
+        when(genreRepository.findParentGenres()).thenReturn(List.of(parent));
         when(genreRepository.findById(9)).thenReturn(Optional.of(child));
         GenrePreferenceRequestDTO request = new GenrePreferenceRequestDTO();
         request.setGenreIds(List.of(9, 1, 2));
@@ -110,11 +110,27 @@ class UserPreferenceServiceTest {
     }
 
     @Test
+    void replaceGenrePreferences_rejectsOrphanGenre() {
+        Genre parentA = genre(1, "Electronic");
+        Genre parentB = genre(2, "Hip Hop");
+        Genre orphan = genre(8, "Avant-Pop");
+        when(genreRepository.findParentGenres()).thenReturn(List.of(parentA, parentB));
+        when(genreRepository.findById(8)).thenReturn(Optional.of(orphan));
+        GenrePreferenceRequestDTO request = new GenrePreferenceRequestDTO();
+        request.setGenreIds(List.of(8, 1, 2));
+
+        InvalidRequestException ex = assertThrows(InvalidRequestException.class,
+                () -> userPreferenceService.replaceGenrePreferences(request));
+        assertEquals("genreIds must be parent genres", ex.getMessage());
+        verify(userGenrePreferenceRepository, never()).deleteByUserId(7);
+    }
+
+    @Test
     void replaceGenrePreferences_savesThreeParents() {
         Genre a = genre(1, "Electronic");
         Genre b = genre(2, "Hip Hop");
         Genre c = genre(3, "Rock");
-        when(genreRepository.findRootGenres()).thenReturn(List.of(a, b, c));
+        when(genreRepository.findParentGenres()).thenReturn(List.of(a, b, c));
         when(genreRepository.findById(1)).thenReturn(Optional.of(a));
         when(genreRepository.findById(2)).thenReturn(Optional.of(b));
         when(genreRepository.findById(3)).thenReturn(Optional.of(c));
