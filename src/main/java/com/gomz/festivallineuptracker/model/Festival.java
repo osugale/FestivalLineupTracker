@@ -20,6 +20,7 @@ public class Festival {
             uniqueConstraints = @UniqueConstraint(name = "uk_festival_artist_pair", columnNames = {"festival_id", "artist_id"}),
             indexes = @Index(name = "idx_festival_artist_artist_festival", columnList = "artist_id, festival_id"))
 
+
     private Set<Artist> artists = new  HashSet<>();
 
 
