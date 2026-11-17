@@ -4,6 +4,5 @@ public enum ScheduleStatus {
 
     TBA,
     SCHEDULED,
-    NA,
-    PIPELINED
+    NA
 }
