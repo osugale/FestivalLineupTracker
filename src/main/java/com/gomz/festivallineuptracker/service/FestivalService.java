@@ -264,6 +264,8 @@ public class FestivalService {
         return genres;
     }
 
+
+
     private Page<FestivalResponseDTO> mapFestivalsWithGenres(Page<Festival> page) {
         List<Festival> content = page.getContent();
         if (content.isEmpty()) {
